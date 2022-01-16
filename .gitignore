@@ -1,0 +1,13 @@
+custom.mk
+.vs*/
+.idea/**
+
+target/
+vendor/
+*.out
+*.tar
+*.tar.gz
+
+test/custom.conf
+test/*.log
+
