@@ -129,8 +129,6 @@ func main() {
 
 	config = load()
 	lib.Debug(4, "config=", config)
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	lib.Info("start service")
 
 	// bind sockets and connections
@@ -170,6 +168,8 @@ func main() {
 		lib.Info("server stopped")
 	}()
 
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	for running {
 		signal := <-signals
 		switch signal {
