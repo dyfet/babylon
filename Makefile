@@ -18,8 +18,9 @@ DESTDIR =
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 SYSCONFDIR = $(PREFIX)/etc
-LOGPREFIXDIR = $(PREFIX)/var/log
-LOCALSTATEDIR = $(PREFIX)/var/lib/babylon
+LOCALSTATEDIR = $(PREFIX)/var/
+LOGPREFIXDIR = $(LOCaLSTATEDIR)/log
+PREFIXPATH = $(LOCALSTATEDIR)/lib/babylon
 TESTDIR = $(PWD)/test
 TAGS =
 
@@ -33,11 +34,11 @@ sinclude custom.mk
 
 build:  required
 	@mkdir -p target/debug
-	@go build -v -tags debug,$(TAGS) -ldflags '-X main.version=$(VERSION) -X main.etcPrefix=$(TESTDIR) -X main.varPrefix=$(TESTDIR) -X main.logPrefix=$(TESTDIR) -X main.buildType=debug' -mod vendor -o target/debug ./...
+	@go build -v -tags debug,$(TAGS) -ldflags '-X main.version=$(VERSION) -X main.etcPrefix=$(TESTDIR) -X main.prefixPath=$(TESTDIR) -X main.logPrefix=$(TESTDIR) -X main.buildType=debug' -mod vendor -o target/debug ./...
 
 release:        required
 	@mkdir -p target/release
-	@CGO_ENABLED=0 go build -v -mod vendor -tags release,static,$(TAGS) -ldflags '-s -extldflags -static -X main.version=$(VERSION) -X main.etcPrefix=$(SYSCONFDIR) -X main.varPrefix=$(LOCALSTATEDIR) -X main.logPrefix=$(LOGPREFIXDIR)' -o target/release ./...
+	@CGO_ENABLED=0 go build -v -mod vendor -tags release,static,$(TAGS) -ldflags '-s -extldflags -static -X main.version=$(VERSION) -X main.etcPrefix=$(SYSCONFDIR) -X main.prefixPath=$(PREFIXPATH) -X main.logPrefix=$(LOGPREFIXDIR)' -o target/release ./...
 
 install:        release
 	@install -d -m 755 $(DESTDIR)$(BINDIR)

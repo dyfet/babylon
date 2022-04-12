@@ -31,11 +31,12 @@ import (
 
 // Argument parser....
 type Args struct {
-	Host string `arg:"--host" help:"server host address" default:""`
-	Port uint16 `arg:"--port" help:"server port" default:"9600"`
+	Config string `arg:"--config" help:"server config file"`
+	Host   string `arg:"--host" help:"server host address" default:""`
+	Port   uint16 `arg:"--port" help:"server port" default:"9600"`
 	// TODO: future TCP/TLS option
-	LogLevel    int  `arg:"-x,--debug" help:"debugging log level"`
-	ShowVersion bool `arg:"--version" help:"display version and exit"`
+	Prefix  string `arg:"--prefix" help:"server prefix path"`
+	Verbose int    `arg:"-v,--verbose" help:"debugging log level"`
 }
 
 // F9600 config object
@@ -52,28 +53,25 @@ type Config struct {
 
 var (
 	// bind Makefile config
-	etcPrefix string = "/etc"
-	varPrefix string = "/var/lib/babylon"
-	logPrefix string = "/var/log"
-	version   string = "unknown"
-	buildType string = "release"
+	prefixPath = "/var/lib/babylon"
+	etcPrefix  = "/etc"
+	logPrefix  = "/var/log"
+	version    = "unknown"
+	buildType  = "release"
 
 	// globals
-	args    *Args   = &Args{}
+	args    *Args   = &Args{Prefix: prefixPath, Config: etcPrefix + "/babylon.conf"}
 	config  *Config = nil
 	running         = true
 	exiting         = 0
 )
 
 func (Args) Version() string {
-	if len(os.Args) == 2 && os.Args[1] == "--version" {
-		return "Version: " + version + "\nConfig: " + etcPrefix + "/babylon.conf\nPrefix: " + varPrefix
-	}
-	return ""
+	return "Version: " + version
 }
 
 func (Args) Description() string {
-	return "f9600 " + version + "\nDavid Sugar <tychosoft@gmail.com>\nProvides Fujitsu F9600 service daemon and command access\n"
+	return "f9600 - provides Fujitsu F9600 service daemon and command access"
 }
 
 // load server config file
@@ -89,7 +87,7 @@ func load() *Config {
 		Pass:   "admin",
 	}
 
-	configs, err := ini.LoadSources(ini.LoadOptions{Loose: true, Insensitive: true}, etcPrefix+"/babylon.conf", "custom.conf")
+	configs, err := ini.LoadSources(ini.LoadOptions{Loose: true, Insensitive: true}, args.Config, "custom.conf")
 	if err == nil {
 		// map and reset rom args if not default
 		configs.Section("f9600").MapTo(&config)
@@ -121,8 +119,8 @@ func main() {
 		os.Remove(logPath)
 	}
 
-	lib.Logger(args.LogLevel, logPath)
-	err := os.Chdir(varPrefix)
+	lib.Logger(args.Verbose, logPath)
+	err := os.Chdir(args.Prefix)
 	if err != nil {
 		lib.Fail(1, err)
 	}
