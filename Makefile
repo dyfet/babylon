@@ -34,7 +34,7 @@ sinclude custom.mk
 
 build:  required
 	@mkdir -p target/debug
-	@go build -v -tags debug,$(TAGS) -ldflags '-X main.version=$(VERSION) -X main.etcPrefix=$(TESTDIR) -X main.prefixPath=$(TESTDIR) -X main.logPrefix=$(TESTDIR) -X main.buildType=debug' -mod vendor -o target/debug ./...
+	@go build -v -tags debug,$(TAGS) -ldflags '-X main.version=$(VERSION) -X main.etcPrefix=$(TESTDIR) -X main.prefixPath=$(TESTDIR) -X main.logPrefix=$(TESTDIR)' -mod vendor -o target/debug ./...
 
 release:        required
 	@mkdir -p target/release

@@ -32,6 +32,19 @@ var (
 	argv0                  = path.Base(os.Args[0])
 )
 
+// internal specify logging level and path
+func openLogger(level int, path string) {
+	var err error
+	verbose = level
+	logpath = path
+	LoggerRestart()
+	logger, err = syslog.New(syslog.LOG_SYSLOG, argv0)
+	if err != nil {
+		log.Println(err)
+		logger = nil
+	}
+}
+
 // Reset Logger such as from sighup
 func LoggerRestart() {
 	if len(logpath) > 0 && logpath != "none" && logpath != "no" && logpath != "/dev/nul" {
@@ -44,19 +57,6 @@ func LoggerRestart() {
 		console.SetOutput(os.Stderr)
 		console.SetFlags(0) // log.Ltime?
 		Notice("logger restart")
-	}
-}
-
-// specify logging level and path
-func Logger(level int, path string) {
-	var err error
-	verbose = level
-	logpath = path
-	LoggerRestart()
-	logger, err = syslog.New(syslog.LOG_SYSLOG, argv0)
-	if err != nil {
-		log.Println(err)
-		logger = nil
 	}
 }
 
@@ -121,8 +121,8 @@ func Info(args ...interface{}) {
 	log.Println(msg)
 }
 
-// Debug output
-func Debug(level int, args ...interface{}) {
+// Verbose output
+func Output(level int, args ...interface{}) {
 	if level > verbose {
 		return
 	}

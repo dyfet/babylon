@@ -57,7 +57,6 @@ var (
 	etcPrefix  = "/etc"
 	logPrefix  = "/var/log"
 	version    = "unknown"
-	buildType  = "release"
 
 	// globals
 	args    *Args   = &Args{Prefix: prefixPath, Config: etcPrefix + "/babylon.conf"}
@@ -72,6 +71,24 @@ func (Args) Version() string {
 
 func (Args) Description() string {
 	return "f9600 - provides Fujitsu F9600 service daemon and command access"
+}
+
+// initialize server
+func init() {
+	for pos, arg := range os.Args {
+		switch arg {
+		case "--":
+			return
+		case "-vv":
+			os.Args[pos] = "--verbose=2"
+		case "-vvv":
+			os.Args[pos] = "--verbose=3"
+		case "-vvvv":
+			os.Args[pos] = "--verbose=4"
+		case "-vvvvv":
+			os.Args[pos] = "--verbose=5"
+		}
+	}
 }
 
 // load server config file
@@ -114,10 +131,6 @@ func main() {
 	logPath := logPrefix + "/f9600.log"
 	arg.MustParse(args)
 	// TODO: constraints on parsed arguments
-
-	if buildType == "debug" {
-		os.Remove(logPath)
-	}
 
 	lib.Logger(args.Verbose, logPath)
 	err := os.Chdir(args.Prefix)
