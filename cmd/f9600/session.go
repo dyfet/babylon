@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"babylon/lib"
 )
@@ -29,6 +30,7 @@ type Session struct {
 	Remote string
 	socket net.Conn
 	result chan string
+	update time.Time
 }
 
 // print into a client session
@@ -82,6 +84,7 @@ func (s *Session) requests() {
 		if !ok {
 			break
 		}
+		s.update = time.Now()
 		if len(text) > 0 {
 			lib.Error(fmt.Errorf("MML Error on %s %s", s.Remote, text))
 		}
@@ -96,6 +99,7 @@ func NewSession(connect net.Conn) *Session {
 		Remote: fmt.Sprint(connect.RemoteAddr()),
 		socket: connect,
 		result: make(chan string),
+		update: time.Now(),
 	}
 	manager.Register(s)
 	go s.requests()

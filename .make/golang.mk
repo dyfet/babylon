@@ -12,6 +12,9 @@ lint:	required
 vet:	required
 	@go vet ./...
 
+fix:	required
+	@go fix ./...
+
 test:	vet
 	@go test ./...
 
