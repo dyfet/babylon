@@ -46,7 +46,7 @@ install:        release
 	@install -d -m 755 $(DESTDIR)$(SYSCONFDIR)
 	@install -d -m 755 $(DESTDIR)$(LOGPREFIXDIR)
 	@install -d -m 755 $(DESTDIR)$(LOCALSTATEDIR)
-	@install -D -m 644 test/babylon.conf $(DESTDIR)$(SYSCONFDIR)/babylon.conf
+	@install -D -m 644 etc/babylon.conf $(DESTDIR)$(SYSCONFDIR)/babylon.conf
 	@install -m 755 target/release/f9600 $(DESTDIR)$(SBINDIR)
 
 clean:
