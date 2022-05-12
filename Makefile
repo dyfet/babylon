@@ -10,13 +10,14 @@
 
 # Project constants
 PROJECT := babylon
-VERSION := 0.0.2
+VERSION := 0.0.3
 PATH := $(PWD)/target/debug:${PATH}
 
 # Project overrides, starting with prefix install
 DESTDIR =
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
+SBINDIR = $(PREFIX)/sbin
 SYSCONFDIR = $(PREFIX)/etc
 LOCALSTATEDIR = $(PREFIX)/var/
 LOGPREFIXDIR = $(LOCaLSTATEDIR)/log
