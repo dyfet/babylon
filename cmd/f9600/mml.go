@@ -19,7 +19,6 @@ import (
 	"babylon/lib"
 	"bufio"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/tarm/serial"
@@ -95,9 +94,6 @@ func (mml *MML) Request(s *Session, cmd string) {
 		command: cmd,
 		session: s,
 	}
-	if !running {
-		return
-	}
 	mml.requests <- request
 }
 
@@ -121,21 +117,12 @@ func (mml *MML) Configure(config *Config) error {
 }
 
 // start mml session
-func (mml *MML) Startup(wg *sync.WaitGroup, config *Config) {
-	defer wg.Done()
+func (mml *MML) Startup(config *Config) {
 	active := false
 	reader := bufio.NewReader(mml.port)
-	lib.Info("mml startup")
+	lib.Debug(1, "mml running")
 	for {
-		request, ok := <-mml.requests
-		if !ok { // if shutdown, exiting
-			break
-		}
-
-		if !running { // flush further pending if stopping...
-			continue
-		}
-
+		request := <-mml.requests
 		session := request.session
 		if !active {
 			count, err := fmt.Fprint(mml.port, "\r")
@@ -193,11 +180,9 @@ func (mml *MML) Startup(wg *sync.WaitGroup, config *Config) {
 			session.Result(err.Error())
 		}
 	}
-	lib.Info("mml shutdown")
 }
 
 // close session, forces mml exit
 func (mml *MML) Shutdown() {
 	mml.port.Close()
-	close(mml.requests)
 }

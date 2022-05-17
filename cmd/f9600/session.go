@@ -47,9 +47,6 @@ func (s *Session) Println(args ...interface{}) (int, error) {
 
 // post a result to the waiting client session
 func (s *Session) Result(text string) error {
-	if !running {
-		return nil
-	}
 	s.result <- text
 	return nil
 }
@@ -57,17 +54,19 @@ func (s *Session) Result(text string) error {
 // close session, forces created session to exit
 func (s *Session) Close() {
 	s.socket.Close()
-	close(s.result)
 }
 
 // execute client requests in a go routine...
 func (s *Session) requests() {
+	defer s.Close()
+	defer close(s.result)
+
 	input := bufio.NewReader(s.socket)
-	for running {
+	for {
 		// prompt for and get input
 		fmt.Fprint(s.socket, "mml>")
 		line, err := input.ReadString('\n')
-		if (err != nil) || !running {
+		if err != nil {
 			break
 		}
 
@@ -80,16 +79,12 @@ func (s *Session) requests() {
 
 		// get result after sending command somewhere
 		mml.Request(s, line)
-		text, ok := <-s.result
-		if !ok {
-			break
-		}
+		text := <-s.result
 		s.update = time.Now()
 		if len(text) > 0 {
 			lib.Error(fmt.Errorf("MML Error on %s %s", s.Remote, text))
 		}
 	}
-	s.socket.Close()
 	manager.Release(s)
 }
 

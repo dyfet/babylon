@@ -17,7 +17,6 @@ package main
 
 import (
 	"babylon/lib"
-	"sync"
 )
 
 // session manager
@@ -54,19 +53,13 @@ func (manager *Manager) Shutdown() {
 }
 
 // process manager api until clean shutdown
-func (manager *Manager) Startup(wg *sync.WaitGroup) {
-	defer wg.Done()
-	lib.Info("manager startup")
-	for running || (len(manager.sessions) > 0) {
+func (manager *Manager) Startup() {
+	lib.Debug(1, "manager running")
+	for {
 		select {
 		case session := <-manager.register:
-			if running {
-				manager.sessions[session] = true
-				lib.Debug(2, "adding session ", session.Remote)
-			} else {
-				lib.Debug(2, "stopping session ", session.Remote)
-				session.Close()
-			}
+			manager.sessions[session] = true
+			lib.Debug(2, "adding session ", session.Remote)
 		case session := <-manager.release:
 			if _, ok := manager.sessions[session]; ok {
 				delete(manager.sessions, session)
@@ -78,7 +71,7 @@ func (manager *Manager) Startup(wg *sync.WaitGroup) {
 			for s := range manager.sessions {
 				s.Close()
 			}
+			return
 		}
 	}
-	lib.Info("manager shutdown")
 }

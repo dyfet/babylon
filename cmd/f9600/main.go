@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"sync"
 	"syscall"
 
 	"babylon/lib"
@@ -138,74 +137,62 @@ func main() {
 		lib.Fail(1, err)
 	}
 
+	// config service
 	config = load()
 	lib.Debug(4, "config=", config)
-	lib.Info("start service")
-
-	// bind sockets and connections
 	tcp, err := net.Listen("tcp", config.Address)
 	if err != nil {
 		lib.Fail(2, err)
 	}
-
-	// action group
-	ag := new(sync.WaitGroup)
-	ag.Add(1)
 	err = mml.Configure(config)
 	if err != nil {
 		lib.Fail(3, err)
 	}
-	go mml.Startup(ag, config)
 
-	// session group
-	sg := new(sync.WaitGroup)
-	sg.Add(2)
-	go manager.Startup(sg)
-	go func() { // lambda for tcp local...
-		defer sg.Done()
-		lib.Info("server started")
-		for {
-			client, err := tcp.Accept()
-			if !running {
-				break
-			}
-			if err != nil {
-				lib.Error(err)
-				continue
-			}
-			fmt.Fprint(client, config.Banner+"\r\n")
-			NewSession(client)
-		}
-		lib.Info("server stopped")
-	}()
+	// signal handler...
+	running := true
+    signals := make(chan os.Signal, 1)
+    signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+    go func() {
+        switch <-signals {
+        case os.Interrupt: // sigint/ctrl-c
+            fmt.Println()
+            running = false
+            tcp.Close()
+            return
+        case syscall.SIGTERM: // normal exit
+            running = false
+            tcp.Close()
+            return
+        case syscall.SIGHUP: // cleanup
+            lib.Info("reload service")
+            lib.LoggerRestart()
+            runtime.GC()
+            config = load()
+        }
+    }()
 
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
-	for running {
-		signal := <-signals
-		switch signal {
-		case os.Interrupt: // sigint/ctrl-c
-			exiting = 1
-			running = false
-			fmt.Println()
-		case syscall.SIGTERM: // normal exit
-			running = false
-		case syscall.SIGHUP: // cleanup
-			lib.Info("reload service")
-			lib.LoggerRestart()
-			runtime.GC()
-			config = load()
-		}
+	// run service
+	lib.Info("start service")
+	go mml.Startup(config)
+	go manager.Startup()
+	for {
+		client, err := tcp.Accept()
+        if err != nil {
+            if running {
+                lib.Error(err)
+            }
+            running = false
+            break
+        }
+
+		fmt.Fprint(client, config.Banner+"\r\n")
+		NewSession(client)
 	}
 
 	// shutdown sessions
 	tcp.Close()
 	manager.Shutdown()
-	sg.Wait()
-
-	// shutdown actions
 	mml.Shutdown()
-	ag.Wait()
-	lib.Info("stopped service; reason=", exiting)
-	os.Exit(exiting)
+	lib.Info("stopped service")
 }
