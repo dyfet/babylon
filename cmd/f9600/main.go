@@ -58,10 +58,8 @@ var (
 	version    = "unknown"
 
 	// globals
-	args    *Args   = &Args{Prefix: prefixPath, Config: etcPrefix + "/babylon.conf"}
-	config  *Config = nil
-	running         = true
-	exiting         = 0
+	args   *Args   = &Args{Prefix: prefixPath, Config: etcPrefix + "/babylon.conf"}
+	config *Config = nil
 )
 
 func (Args) Version() string {
@@ -151,26 +149,26 @@ func main() {
 
 	// signal handler...
 	running := true
-    signals := make(chan os.Signal, 1)
-    signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
-    go func() {
-        switch <-signals {
-        case os.Interrupt: // sigint/ctrl-c
-            fmt.Println()
-            running = false
-            tcp.Close()
-            return
-        case syscall.SIGTERM: // normal exit
-            running = false
-            tcp.Close()
-            return
-        case syscall.SIGHUP: // cleanup
-            lib.Info("reload service")
-            lib.LoggerRestart()
-            runtime.GC()
-            config = load()
-        }
-    }()
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+	go func() {
+		switch <-signals {
+		case os.Interrupt: // sigint/ctrl-c
+			fmt.Println()
+			running = false
+			tcp.Close()
+			return
+		case syscall.SIGTERM: // normal exit
+			running = false
+			tcp.Close()
+			return
+		case syscall.SIGHUP: // cleanup
+			lib.Info("reload service")
+			lib.LoggerRestart()
+			runtime.GC()
+			config = load()
+		}
+	}()
 
 	// run service
 	lib.Info("start service")
@@ -178,13 +176,13 @@ func main() {
 	go manager.Startup()
 	for {
 		client, err := tcp.Accept()
-        if err != nil {
-            if running {
-                lib.Error(err)
-            }
-            running = false
-            break
-        }
+		if err != nil {
+			if running {
+				lib.Error(err)
+			}
+			running = false
+			break
+		}
 
 		fmt.Fprint(client, config.Banner+"\r\n")
 		NewSession(client)
