@@ -152,21 +152,20 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	go func() {
-		switch <-signals {
-		case os.Interrupt: // sigint/ctrl-c
-			fmt.Println()
-			running = false
-			tcp.Close()
-			return
-		case syscall.SIGTERM: // normal exit
-			running = false
-			tcp.Close()
-			return
-		case syscall.SIGHUP: // cleanup
-			lib.Info("reload service")
-			lib.LoggerRestart()
-			runtime.GC()
-			config = load()
+		defer tcp.Close()
+		for running {
+			switch <-signals {
+			case os.Interrupt: // sigint/ctrl-c
+				fmt.Println()
+				running = false
+			case syscall.SIGTERM: // normal exit
+				running = false
+			case syscall.SIGHUP: // cleanup
+				lib.Info("reload service")
+				lib.LoggerRestart()
+				runtime.GC()
+				config = load()
+			}
 		}
 	}()
 
