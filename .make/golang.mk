@@ -35,8 +35,11 @@ vendor:	go.sum
 		touch vendor ;\
 	fi
 
-target/debug:
+target:
+	@mkdir target
+
+target/debug:	target
 	@mkdir target/debug
 
-target/release:
+target/release:	target
 	@mkdir target/release
