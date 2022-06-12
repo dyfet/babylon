@@ -33,12 +33,10 @@ required:       vendor          # required to build
 # Define or override custom env
 sinclude custom.mk
 
-build:  required
-	@mkdir -p target/debug
+build:  required target/debug
 	@go build -v -tags debug,$(TAGS) -ldflags '-X main.version=$(VERSION) -X main.etcPrefix=$(TESTDIR) -X main.prefixPath=$(TESTDIR) -X main.logPrefix=$(TESTDIR)' -mod vendor -o target/debug ./...
 
-release:        required
-	@mkdir -p target/release
+release:        required target/release
 	@CGO_ENABLED=0 go build -v -mod vendor -tags release,static,$(TAGS) -ldflags '-s -extldflags -static -X main.version=$(VERSION) -X main.etcPrefix=$(SYSCONFDIR) -X main.prefixPath=$(PREFIXPATH) -X main.logPrefix=$(LOGPREFIXDIR)' -o target/release ./...
 
 install:        release

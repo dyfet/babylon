@@ -34,3 +34,9 @@ vendor:	go.sum
 	else \
 		touch vendor ;\
 	fi
+
+target/debug:
+	@mkdir target/debug
+
+target/release:
+	@mkdir target/release

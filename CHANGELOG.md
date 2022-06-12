@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.0.3
+- Fix signal handler
+- Lint cleanup
+- Simplify service handling
+
 ## v0.0.2
 - Track last command update for idle time
 - Improved debug and release support
