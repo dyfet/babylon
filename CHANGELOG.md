@@ -1,5 +1,8 @@
 # Release Notes
 
+## v0.0.4
+- In progressy
+
 ## v0.0.3
 - Fix signal handler
 - Lint cleanup
