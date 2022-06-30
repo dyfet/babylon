@@ -33,13 +33,19 @@ required:       vendor          # required to build
 # Define or override custom env
 sinclude custom.mk
 
-build:  required target/debug
+build:  required
+	@mkdir -p target/debug
 	@go build -v -tags debug,$(TAGS) -ldflags '-X main.version=$(VERSION) -X main.etcPrefix=$(TESTDIR) -X main.prefixPath=$(TESTDIR) -X main.logPrefix=$(TESTDIR)' -mod vendor -o target/debug ./...
 
-release:        required target/release
-	@CGO_ENABLED=0 go build -v -mod vendor -tags release,static,$(TAGS) -ldflags '-s -extldflags -static -X main.version=$(VERSION) -X main.etcPrefix=$(SYSCONFDIR) -X main.prefixPath=$(PREFIXPATH) -X main.logPrefix=$(LOGPREFIXDIR)' -o target/release ./...
+release-static:	required
+	@mkdir -p target/release
+	@CGO_ENABLED=0 go build -v -mod vendor -tags release,static,$(TAGS) -ldflags '-s -w -extldflags -static -X main.version=$(VERSION) -X main.etcPrefix=$(SYSCONFDIR) -X main.prefixPath=$(PREFIXPATH) -X main.logPrefix=$(LOGPREFIXDIR)' -o target/release ./...
 
-install:        release
+release-shared:	required
+	@mkdir -p target/release
+	@go build -v -mod vendor -tags release,$(TAGS) -ldflags '-s -w -X main.version=$(VERSION) -X main.etcPrefix=$(SYSCONFDIR) -X main.prefixPath=$(PREFIXPATH) -X main.logPrefix=$(LOGPREFIXDIR)' -o target/release ./...
+
+install:	release
 	@install -d -m 755 $(DESTDIR)$(BINDIR)
 	@install -d -m 755 $(DESTDIR)$(SBINDIR)
 	@install -d -m 755 $(DESTDIR)$(SYSCONFDIR)

@@ -2,7 +2,11 @@
 # Use of this source code is governed by a MIT-style license
 # that can be found in the included LICENSE.md file.
 
-.PHONY: lint vet test cover
+.PHONY: lint vet fix test cover release
+
+ifndef	RELEASE_TYPE
+RELEASE_TYPE = shared
+endif
 
 lint:	required
 	@go fmt ./...
@@ -24,6 +28,10 @@ cover:	vet
 go.sum:	go.mod
 	@go mod tidy
 
+# select release by type (static or shared)
+release: release-$(RELEASE_TYPE)
+	@echo "releasing as $(RELEASE_TYPE)"
+
 # if no vendor directory (clean) or old in git checkouts
 vendor:	go.sum
 	@if test -d .git ; then \
@@ -34,12 +42,3 @@ vendor:	go.sum
 	else \
 		touch vendor ;\
 	fi
-
-target:
-	@mkdir target
-
-target/debug:	target
-	@mkdir target/debug
-
-target/release:	target
-	@mkdir target/release

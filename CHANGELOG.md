@@ -1,7 +1,8 @@
 # Release Notes
 
 ## v0.0.4
-- In progressy
+- Support release types
+- Improve and simplify make builds
 
 ## v0.0.3
 - Fix signal handler
