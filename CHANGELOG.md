@@ -3,6 +3,7 @@
 ## v0.0.4
 - Support release types
 - Improve and simplify make builds
+- Isolate package build to target path
 
 ## v0.0.3
 - Fix signal handler

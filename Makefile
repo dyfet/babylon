@@ -56,7 +56,7 @@ install:	release
 
 clean:
 	@go clean -cache ./...
-	@rm -rf target *.out vendor
+	@rm -rf target *.out
 	@rm -f $(PROJECT)-*.tar.gz $(PROJECT)-*.tar
 
 version:
