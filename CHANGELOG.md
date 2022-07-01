@@ -1,5 +1,8 @@
 # Release Notes
 
+## v0.0.5
+- In progress
+
 ## v0.0.4
 - Support release types
 - Improve and simplify make builds
