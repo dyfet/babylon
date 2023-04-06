@@ -1,0 +1,8 @@
+pipeline:
+  merge:
+    image: golang:1.17
+    commands:
+      - go build ./...
+      - go test ./...
+    when:
+      event: pull_request
