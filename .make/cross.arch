@@ -1,0 +1,36 @@
+#!/bin/sh
+# Copyright (C) 2021 David Sugar <tychosoft@gmail.com>.
+# Use of this source code is governed by a MIT-style license
+# that can be found in the included LICENSE.md file.
+
+# Map common and debian architecture names to golang
+
+case "$1" in
+i386|i*86|x86)
+    echo 386
+    ;;
+aarch64)
+    echo arm64
+    ;;
+x86_64)
+    echo amd64
+    ;;
+mipsel)
+    echo mipsle
+    ;;
+ppc64el)
+    echo ppc64le
+    ;;
+mips64)
+    echo mips64el
+    ;;
+rpi)
+    echo armel
+    ;;
+armhf|arm32|armv7)
+    echo arm
+    ;;
+*)
+    echo $1
+    ;;
+esac

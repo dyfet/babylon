@@ -5,10 +5,19 @@
 .PHONY: lint vet fix test cover release
 
 ifndef	RELEASE_TYPE
-RELEASE_TYPE = shared
+RELEASE_TYPE := shared
+endif
+
+ifndef	BUILD_MODE
+BUILD_MODE := default
 endif
 
 TARGET := $(CURDIR)/target
+
+docs:	required
+	@rm -rf target/docs
+	@mkdir -p target/docs
+	@doc2go -out target/docs ./...
 
 lint:	required
 	@go fmt ./...
@@ -30,13 +39,9 @@ cover:	vet
 go.sum:	go.mod
 	@go mod tidy
 
-# select release by type (static or shared)
-release: release-$(RELEASE_TYPE)
-	@echo "releasing as $(RELEASE_TYPE)"
-
 package:
 	@mkdir -p target
-	@rm -f target/src
+	@rm -rf target/src
 	@cd target ; ln -s .. src
 	@cd target/src ; GOPATH=$(TARGET) HOME=$(TARGET) GO11MODULE=off $(MAKE) install
 
