@@ -43,7 +43,7 @@ stage:	required
 
 release:	required
 	@mkdir -p target/release
-	@GOOS=$(GOOS) GOARCH=$(GOARCH) go build -v -mod vendor -tags release,$(TAGS) -ldflags '-s -w -X main.version=$(VERSION) -X main.etcPrefix=$(SYSCONFDIR) -X main.prefixPath=$(PREFIXPATH) -X main.logPrefix=$(LOGPREFIXDIR)' -o target/release ./...
+	@GOOS=$(GOOS) GOARCH=$(GOARCH) go build --buildmode=$(BUILD_MODE) -v -mod vendor -tags release,$(TAGS) -ldflags '-s -w -X main.version=$(VERSION) -X main.etcPrefix=$(SYSCONFDIR) -X main.prefixPath=$(PREFIXPATH) -X main.logPrefix=$(LOGPREFIXDIR)' -o target/release ./...
 
 debug:	build
 

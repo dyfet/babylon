@@ -4,10 +4,6 @@
 
 .PHONY: lint vet fix test cover release
 
-ifndef	RELEASE_TYPE
-RELEASE_TYPE := shared
-endif
-
 ifndef	BUILD_MODE
 BUILD_MODE := default
 endif
