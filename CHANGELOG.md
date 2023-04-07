@@ -1,7 +1,8 @@
 # Release Notes
 
 ## v0.0.5
-- In progress
+- Initial ci setup
+- Modernized builds
 
 ## v0.0.4
 - Support release types

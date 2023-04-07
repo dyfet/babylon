@@ -35,18 +35,6 @@ cover:	vet
 go.sum:	go.mod
 	@go mod tidy
 
-package:
-	@mkdir -p target
-	@rm -rf target/src
-	@cd target ; ln -s .. src
-	@cd target/src ; GOPATH=$(TARGET) HOME=$(TARGET) GO11MODULE=off $(MAKE) install
-
-package-test:
-	@mkdir -p target
-	@rm -f target/src
-	@cd target ; ln -s .. src
-	@cd target/src ; GOPATH=$(TARGET) HOME=$(TARGET) GO11MODULE=off $(MAKE) test
-
 # if no vendor directory (clean) or old in git checkouts
 vendor:	go.sum
 	@if test -d .git ; then \
