@@ -10,7 +10,7 @@
 
 # Project constants
 PROJECT := babylon
-VERSION := 0.0.5
+VERSION := 0.0.6
 PATH := $(PWD)/target/debug:${PATH}
 
 # Project overrides, starting with prefix install

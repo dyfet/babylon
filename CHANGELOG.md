@@ -1,5 +1,8 @@
 # Release Notes
 
+## v0.0.6
+- In progress
+
 ## v0.0.5
 - Initial ci setup
 - Modernized builds
