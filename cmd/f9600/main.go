@@ -74,6 +74,7 @@ func (Args) Description() string {
 
 // initialize server and parse arguments
 func init() {
+	// parse arguments
 	for pos, arg := range os.Args {
 		switch arg {
 		case "--":
@@ -89,6 +90,15 @@ func init() {
 		}
 	}
 	arg.MustParse(args)
+
+	// setup service
+	logPath := logPrefix + "/f9600.log"
+	lib.Logger(args.Verbose, logPath)
+	load()
+	err := os.Chdir(args.Prefix)
+	if err != nil {
+		lib.Fail(1, err)
+	}
 }
 
 // load server config file
@@ -130,15 +140,7 @@ func load() {
 }
 
 func main() {
-	logPath := logPrefix + "/f9600.log"
-	lib.Logger(args.Verbose, logPath)
-	err := os.Chdir(args.Prefix)
-	if err != nil {
-		lib.Fail(1, err)
-	}
-
 	// config service
-	load()
 	lib.Debug(4, "config=", config)
 	tcp, err := net.Listen("tcp", config.Address)
 	if err != nil {
