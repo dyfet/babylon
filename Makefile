@@ -1,12 +1,12 @@
 #!/usr/bin/make -f
-# Copyright (C) 2020-2021 David Sugar <tychosoft@gmail.com>.
-# Use of this source code is governed by a MIT-style license
-# that can be found in the included LICENSE.md file.
-
-# This is needed because GO lacks proper project level build support.  Sure,
-# they could have used go.mod to do some things such as store project metadata
-# like Cargo.toml does for rust, but they didn't. So we have a make to get past
-# stupid go project limitations.
+# Copyright (C) 2020-2023 David Sugar <tychosoft@gmail.com>.
+# Use of this source code is governed by the terms of the GNU GPL
+# v3 or later as found in the included LICENSE.md file.
+#
+# This is needed because GO lacks proper project level build support.
+# Sure, they could have used go.mod to do some things such as store
+# project metadata like Cargo.toml does for rust, but they didn't. So
+# we have a make to get past stupid go project limitations.
 
 # Project constants
 PROJECT := babylon
@@ -25,7 +25,7 @@ PREFIXPATH = $(LOCALSTATEDIR)/lib/babylon
 TESTDIR = $(PWD)/test
 TAGS =
 
-.PHONY: all required version build debug stage release install clean
+.PHONY: all required version build debug release install clean
 
 all:            build           # default target debug
 required:       vendor          # required to build
@@ -33,13 +33,9 @@ required:       vendor          # required to build
 # Define or override custom env
 sinclude custom.mk
 
-build:  required
+build:  lint
 	@mkdir -p target/debug
 	@go build -v -tags debug,$(TAGS) -ldflags '-X main.version=$(VERSION) -X main.etcPrefix=$(TESTDIR) -X main.prefixPath=$(TESTDIR) -X main.logPrefix=$(TESTDIR)' -mod vendor -o target/debug ./...
-
-stage:	required
-	@mkdir -p target/stage
-	@go build -v -mod vendor -tags release,stage,$(TAGS) -ldflags '-X main.version=$(VERSION) -X main.etcPrefix=$(SYSCONFDIR) -X main.prefixPath=$(PREFIXPATH) -X main.logPrefix=$(LOGPREFIXDIR)' -o target/stage ./...
 
 release:	required
 	@mkdir -p target/release

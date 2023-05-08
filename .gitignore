@@ -1,13 +1,15 @@
 custom.mk
-.vs*/
-.idea/**
 
 target/
 vendor/
+.vs/
+
+test/*.conf
+test/*.crt
+test/*.key
+
+*.log
 *.out
 *.tar
 *.tar.gz
-
-test/custom.conf
-test/*.log
 

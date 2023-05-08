@@ -2,7 +2,9 @@
 # Use of this source code is governed by a MIT-style license
 # that can be found in the included LICENSE.md file.
 
-.PHONY: dist
+.PHONY: dist distclean
+
+GOVER=$(shell grep ^go <go.mod)
 
 dist:	required
 	@rm -f $(PROJECT)-*.tar.gz $(PROJECT)-*.tar
@@ -11,4 +13,8 @@ dist:	required
 		tar --transform s:^:$(PROJECT)-$(VERSION)/: --append --file=$(PROJECT)-$(VERSION).tar vendor ; fi
 	@gzip $(PROJECT)-$(VERSION).tar
 
-
+distclean:	clean
+	@rm -rf vendor
+	@rm -f go.sum
+	@echo "module $(PROJECT)\n\n$(GOVER)" >go.mod
+	@$(MAKE) required
