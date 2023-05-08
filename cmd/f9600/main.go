@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"sync"
 	"syscall"
 
 	"babylon/lib"
@@ -60,6 +61,7 @@ var (
 	// globals
 	args   *Args   = &Args{Prefix: prefixPath, Config: etcPrefix + "/babylon.conf"}
 	config *Config = nil
+	lock   sync.RWMutex
 )
 
 func (Args) Version() string {
@@ -67,10 +69,10 @@ func (Args) Version() string {
 }
 
 func (Args) Description() string {
-	return "f9600 - provides Fujitsu F9600 service daemon and command access"
+	return "f9600 - Fujitsu F9600 service daemon and MML command access"
 }
 
-// initialize server
+// initialize server and parse arguments
 func init() {
 	for pos, arg := range os.Args {
 		switch arg {
@@ -86,12 +88,13 @@ func init() {
 			os.Args[pos] = "--verbose=5"
 		}
 	}
+	arg.MustParse(args)
 }
 
 // load server config file
-func load() *Config {
+func load() {
 	// default config
-	config := Config{
+	new_config := Config{
 		Banner: "Welcome to F9600 pbx",
 		Device: "/dev/ttyUSB0",
 		Speed:  9600,
@@ -104,31 +107,30 @@ func load() *Config {
 	configs, err := ini.LoadSources(ini.LoadOptions{Loose: true, Insensitive: true}, args.Config, "custom.conf")
 	if err == nil {
 		// map and reset rom args if not default
-		configs.Section("f9600").MapTo(&config)
+		configs.Section("f9600").MapTo(&new_config)
 		if args.Port != 9600 {
-			config.Port = args.Port
+			new_config.Port = args.Port
 		}
 
 		if len(args.Host) > 0 {
-			config.Host = args.Host
+			new_config.Host = args.Host
 		}
 	} else {
 		lib.Error(err)
 	}
 
 	// constraints and flags
-	if config.Host == "*" {
-		config.Host = ""
+	if new_config.Host == "*" {
+		new_config.Host = ""
 	}
-	config.Address = fmt.Sprintf("%s:%v", config.Host, config.Port)
-	return &config
+	new_config.Address = fmt.Sprintf("%s:%v", new_config.Host, new_config.Port)
+	lock.Lock()
+	defer lock.Unlock()
+	config = &new_config
 }
 
 func main() {
 	logPath := logPrefix + "/f9600.log"
-	arg.MustParse(args)
-	// TODO: constraints on parsed arguments
-
 	lib.Logger(args.Verbose, logPath)
 	err := os.Chdir(args.Prefix)
 	if err != nil {
@@ -136,7 +138,7 @@ func main() {
 	}
 
 	// config service
-	config = load()
+	load()
 	lib.Debug(4, "config=", config)
 	tcp, err := net.Listen("tcp", config.Address)
 	if err != nil {
@@ -164,7 +166,7 @@ func main() {
 				lib.Info("reload service")
 				lib.LoggerRestart()
 				runtime.GC()
-				config = load()
+				load()
 			}
 		}
 	}()
@@ -182,7 +184,8 @@ func main() {
 			running = false
 			break
 		}
-
+		lock.RLock()
+		defer lock.RUnlock()
 		fmt.Fprint(client, config.Banner+"\r\n")
 		NewSession(client)
 	}
