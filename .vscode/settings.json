@@ -1,0 +1,11 @@
+{
+    "search.exclude": {
+        "**/.git": true,
+        "**/vendor": true,
+        "**/target": true
+    },
+    "files.watcherExclude": {
+        "**/target/**": true,
+        "**/vendor/**": true
+    }
+}
