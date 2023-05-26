@@ -1,7 +1,10 @@
 # Release Notes
 
 ## v0.0.6
-- In progress
+- Editor exclusions
+- Further improve init
+- Modernize config and locking
+- Modernize golang builds
 
 ## v0.0.5
 - Initial ci setup

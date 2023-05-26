@@ -27,7 +27,7 @@ TAGS =
 
 .PHONY: all required version build debug release install clean
 
-all:            build           # default target debug
+all:		build		# default target debug
 required:       vendor          # required to build
 
 # Define or override custom env
