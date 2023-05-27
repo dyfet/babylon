@@ -44,15 +44,56 @@ endif
 endif
 
 # Project overrides, starting with prefix install
-DESTDIR =
-PREFIX = /usr/local
-BINDIR = $(PREFIX)/bin
-SBINDIR = $(PREFIX)/sbin
-DATADIR = $(PREFIX)/share
-SYSCONFDIR = $(PREFIX)/etc
-LOCALSTATEDIR = $(PREFIX)/var
-LOGPREFIXDIR = $(LOCALSTATEDIR)/log
-WORKINGDIR = $(LOCALSTATEDIR)/lib/$(PROJECT)
-APPDATADIR = $(DATADIR)/$(PROJECT)
 TAGS =
 
+ifndef	DESTDIR
+DESTDIR =
+endif
+
+ifndef	PREFIX
+PREFIX := /usr/local
+endif
+
+ifndef	BINDIR
+BINDIR := $(PREFIX)/bin
+endif
+
+ifndef	SBINDIR
+SBINDIR := $(PREFIX)/sbin
+endif
+
+ifndef	LIBDIR
+LIBDIR := $(PREFIX)/lib
+endif
+
+ifndef	LIBDATADIR
+LIBDATADIR := $(PREFIX)/lib
+endif
+
+ifndef	DATADIR
+DATADIR := $(PREFIX)/share
+endif
+
+ifndef	MANDIR
+MANDIR := $(PREFIX)/man
+endif
+
+ifndef	LOCALSTATEDIR
+LOCALSTATEDIR := $(PREFIX)/var
+endif
+
+ifndef	SYSCONFDIR
+SYSCONFDIR := $(PREFIX)/etc
+endif
+
+ifndef	LOGPREFIXDIR
+LOGPREFIXDIR := $(LOCALSTATEDIR)/log
+endif
+
+ifndef	WORKINGDIR
+WORKINGDIR := $(LOCALSTATEDIR)/lib/$(PROJECT)
+endif
+
+ifndef	APPDATADIR
+APPDATADIR := $(DATADIR)/$(PROJECT)
+endif
