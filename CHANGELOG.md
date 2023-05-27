@@ -1,5 +1,8 @@
 # Release Notes
 
+## v0.0.7
+- In progress
+
 ## v0.0.6
 - Standardized gnu paths
 - Editor exclusions
