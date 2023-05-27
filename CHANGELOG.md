@@ -1,6 +1,7 @@
 # Release Notes
 
 ## v0.0.6
+- Standardized gnu paths
 - Editor exclusions
 - Further improve init
 - Modernize config and locking
