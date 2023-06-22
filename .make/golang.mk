@@ -9,6 +9,7 @@ BUILD_MODE := default
 endif
 
 TARGET := $(CURDIR)/target
+export GOCACHE := $(TARGET)/cache
 
 docs:	required
 	@rm -rf target/docs

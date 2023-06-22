@@ -75,7 +75,7 @@ DATADIR := $(PREFIX)/share
 endif
 
 ifndef	MANDIR
-MANDIR := $(PREFIX)/man
+MANDIR := $(DATADIR)/man
 endif
 
 ifndef	LOCALSTATEDIR

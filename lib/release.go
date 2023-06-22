@@ -22,3 +22,7 @@ func Logger(level int, path string) {
 
 func Debug(level int, args ...interface{}) {
 }
+
+func IsDebug() bool {
+	return false
+}
