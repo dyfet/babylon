@@ -105,5 +105,6 @@ const (
 
 const (
 	EVT_TIMEOUT  EVT_TYPE = "timeout"
+	EVT_STARTUP  EVT_TYPE = "startup"
 	EVT_SHUTDOWN EVT_TYPE = "shutdown"
 )

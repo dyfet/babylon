@@ -151,11 +151,13 @@ func (ctx *Context) Listen(address string, out chan<- Event) error {
 	if result != 0 {
 		return fmt.Errorf("sip error: %d", result)
 	}
-	return dispatch(ctx, out)
+	return ctx.dispatch(out)
 }
 
-func dispatch(ctx *Context, out chan<- Event) error {
-	var event Event
+func (ctx *Context) dispatch(out chan<- Event) error {
+	var event Event = Event{Sip: ctx, Type: EVT_STARTUP, Status: SIP_OK}
+	out <- event
+
 	for !ctx.closed {
 		event = Event{Sip: ctx, Type: EVT_TIMEOUT, Status: SIP_OK}
 		evt := C.eXosip_event_wait(ctx.context, C.int(ctx.Timeout/1000), C.int(ctx.Timeout%1000))
@@ -167,6 +169,7 @@ func dispatch(ctx *Context, out chan<- Event) error {
 
 		C.eXosip_event_free(evt)
 	}
+
 	event = Event{Sip: nil, Type: EVT_SHUTDOWN, Status: SIP_OK}
 	out <- event
 	ctx.active = -1
