@@ -39,6 +39,7 @@ install:	release
 	@install -d -m 755 $(DESTDIR)$(LOCALSTATEDIR)
 	@install -D -m 644 etc/babylon.conf $(DESTDIR)$(SYSCONFDIR)/babylon.conf
 	@install -s -m 755 target/release/f9600 $(DESTDIR)$(SBINDIR)
+	@install -s -m 755 target/release/netmouth $(DESTDIR)$(SBINDIR)
 
 clean:
 	@go clean ./...
