@@ -1,5 +1,8 @@
 # Release Notes
 
+## v0.1.1
+- In progress
+
 ## v0.1.0
 - Netmouth SIP TTS service started
 - Start of libeXosip2 under golang support
