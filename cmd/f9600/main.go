@@ -116,7 +116,7 @@ func load() {
 		Pass:   "admin",
 	}
 
-	configs, err := ini.LoadSources(ini.LoadOptions{Loose: true, Insensitive: true}, args.Config, "custom.conf")
+	configs, err := ini.LoadSources(ini.LoadOptions{Loose: true, Insensitive: true}, args.Config, args.Prefix+"/custom.conf")
 	if err == nil {
 		// map and reset rom args if not default
 		configs.Section("f9600").MapTo(&new_config)

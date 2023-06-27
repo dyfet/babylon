@@ -53,6 +53,7 @@ type Config struct {
 	Timeout  int    `ini:"timeout"`
 	Server   string `ini:"server"`
 	Identity string `ini:"identity"`
+	Secret   string `ini:"secret"`
 }
 
 var (
@@ -101,6 +102,7 @@ func init() {
 	logPath := logPrefix + "/notmouth.log"
 	lib.Logger(args.Verbose, logPath)
 	load()
+	fmt.Printf("PREFIX %s\n", args.Prefix)
 	err := os.Chdir(args.Prefix)
 	if err != nil {
 		lib.Fail(1, err)
@@ -119,7 +121,7 @@ func load() {
 		Timeout:  500,
 	}
 
-	configs, err := ini.LoadSources(ini.LoadOptions{Loose: true, Insensitive: true}, args.Config, "custom.conf")
+	configs, err := ini.LoadSources(ini.LoadOptions{Loose: true, Insensitive: true}, args.Config, args.Prefix+"/custom.conf")
 	if err == nil {
 		// map and reset rom args if not default
 		configs.Section("sip").MapTo(&new_config)
@@ -162,14 +164,27 @@ func main() {
 		lib.Fail(99, err, config.Identity)
 	}
 
+	route, err := sipuri.Parse(config.Server)
+	if err != nil {
+		lib.Fail(99, err, config.Server)
+	}
+
+	register := sipuri.New(identity.User(), identity.Host())
 	lib.Debug(3, "prefix=", args.Prefix, ", bind=", address)
-	register := sipuri.New(identity.User(), identity.Host()+":"+identity.Port())
+	lib.Debug(3, "server=", "sip:"+route.Host(), ", identity=", register)
+
+	secret := identity.Password()
+	if len(secret) < 1 {
+		secret = config.Secret
+	}
+
 	sip := osip.New(osip.Config{
 		Agent:    "netmouth/" + version,
 		Ipv6:     config.Ipv6,
-		Server:   config.Server,
-		Identity: register.User(),
-		Secret:   identity.Password(),
+		Server:   "sip:" + route.Host(),
+		Identity: register.String(),
+		Username: identity.User(),
+		Password: secret,
 		Refresh:  config.Refresh,
 		NoMedia:  true,
 	})

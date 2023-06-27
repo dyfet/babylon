@@ -49,7 +49,8 @@ type Config struct {
 	Refresh  int
 	Server   string
 	Identity string
-	Secret   string
+	Username string
+	Password string
 }
 
 type Context struct {
