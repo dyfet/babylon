@@ -1,15 +1,17 @@
 # What is Babylon?
 
-The Babylon project is a re-creation of many of my original PBX network
-integration tools from the early 1990's, in go.  Many of these were originally
+The Babylon project is a re-creation of some of my original PBX network
+integration tools from the early 1990's and supporting services for SIP
+telephony PBX systems, written in go.  Some of these were originally
 written in C for QNX, and then ported to Linux. This will eventually include
 the F9600 mml server, a Panasonic PAPI DBS server, an smdi server, the SPO256
-speaker, cdr logging servers, a cdr collection server, and other odd things.
+speaker, cdr logging servers, a cdr collection server, and other odd things,
+as well as a SIP "net" mouth TTS, a sip security camera for RPI, etc.
 
 One reason for this project is simply to help me decide best practices for
 developing enterprise services in golang going forward.  This project will
-eventually directly support building for traditional os packaging, offer
-ansible deployment, or docker creation, using a single top level Makefile.
+eventually directly support building for traditional os packaging and offer
+ansible deployment using a single top level Makefile.
 
 ## Installation
 

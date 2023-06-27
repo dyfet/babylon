@@ -1,7 +1,9 @@
 pipeline:
   merge:
-    image: golang:1.17
+    image: alpine
     commands:
+      - apk add --no-cache alpine-sdk go
+      - apk add libexosip2-dev libosip2-dev --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing
       - go build ./...
       - go test ./...
     when:

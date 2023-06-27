@@ -10,6 +10,7 @@ endif
 
 TARGET := $(CURDIR)/target
 export GOCACHE := $(TARGET)/cache
+export PATH := $(TARGET)/debug:${PATH}
 
 docs:	required
 	@rm -rf target/docs

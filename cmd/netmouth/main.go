@@ -1,4 +1,4 @@
-// Copyright (C) 2021-2022 David Sugar <tychosoft@gmail.com>.
+// Copyright (C) 2023 David Sugar <tychosoft@gmail.com>.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"os/signal"
 	"runtime"
@@ -25,30 +24,35 @@ import (
 	"syscall"
 
 	"babylon/lib"
+	"babylon/lib/osip"
+
 	"github.com/alexflint/go-arg"
+	"github.com/percivalalb/sipuri"
 	"gopkg.in/ini.v1"
 )
 
 // Argument parser....
 type Args struct {
-	Config string `arg:"--config" help:"server config file"`
-	Host   string `arg:"--host" help:"server host address" default:""`
-	Port   uint16 `arg:"--port" help:"server port" default:"9600"`
-	// TODO: future TCP/TLS option
+	Config  string `arg:"--config" help:"server config file"`
+	Host    string `arg:"--host" help:"server host address" default:""`
+	Port    uint16 `arg:"--port" help:"server port" default:"0"`
 	Prefix  string `arg:"--prefix" help:"server prefix path"`
+	Ipv6    bool   `arg:"-6" help:"enable ipv6 support"`
+	Tcp     bool   `arg:"-t" help:"enable tcp sip support"`
 	Verbose int    `arg:"-v,--verbose" help:"debugging log level"`
 }
 
-// F9600 config object
+// SIP registiry and local config
 type Config struct {
-	Banner  string `ini:"banner"`
-	Device  string `ini:"device"`
-	Speed   int    `ini:"speed"`
-	Host    string `ini:"host"`
-	Port    uint16 `ini:"port"`
-	User    string `ini:"user"`
-	Pass    string `ini:"pass"`
-	Address string `ini:"-"`
+	Host     string `ini:"host"`
+	Port     uint16 `ini:"port"`
+	Ipv6     bool   `ini:"ipv6"`
+	Tcp      bool   `ini:"tcp"`
+	Refresh  int    `ini:"refresh"`
+	Buffer   int    `ini:"events"`
+	Timeout  int    `ini:"timeout"`
+	Server   string `ini:"server"`
+	Identity string `ini:"identity"`
 }
 
 var (
@@ -69,7 +73,7 @@ func (Args) Version() string {
 }
 
 func (Args) Description() string {
-	return "f9600 - Fujitsu F9600 service daemon and MML command access"
+	return "netmouth - TTS speaks sip chat messages"
 }
 
 // initialize server and parse arguments
@@ -94,7 +98,7 @@ func init() {
 	arg.MustParse(args)
 
 	// setup service
-	logPath := logPrefix + "/f9600.log"
+	logPath := logPrefix + "/notmouth.log"
 	lib.Logger(args.Verbose, logPath)
 	load()
 	err := os.Chdir(args.Prefix)
@@ -107,25 +111,33 @@ func init() {
 func load() {
 	// default config
 	new_config := Config{
-		Banner: "Welcome to F9600 pbx",
-		Device: "/dev/ttyUSB0",
-		Speed:  9600,
-		Host:   args.Host,
-		Port:   args.Port,
-		User:   "admin",
-		Pass:   "admin",
+		Host:     args.Host,
+		Port:     args.Port,
+		Server:   "sip:localhost",
+		Identity: "sip:88@localhost",
+		Refresh:  300,
+		Timeout:  500,
 	}
 
 	configs, err := ini.LoadSources(ini.LoadOptions{Loose: true, Insensitive: true}, args.Config, "custom.conf")
 	if err == nil {
 		// map and reset rom args if not default
-		configs.Section("f9600").MapTo(&new_config)
-		if args.Port != 9600 {
+		configs.Section("sip").MapTo(&new_config)
+		configs.Section("tts").MapTo(&new_config)
+		if args.Port != 0 {
 			new_config.Port = args.Port
 		}
 
 		if len(args.Host) > 0 {
 			new_config.Host = args.Host
+		}
+
+		if args.Ipv6 {
+			new_config.Ipv6 = true
+		}
+
+		if args.Tcp {
+			new_config.Tcp = true
 		}
 	} else {
 		lib.Error(err)
@@ -135,37 +147,45 @@ func load() {
 	if new_config.Host == "*" {
 		new_config.Host = ""
 	}
-	new_config.Address = fmt.Sprintf("%s:%v", new_config.Host, new_config.Port)
 	lock.Lock()
 	defer lock.Unlock()
 	config = &new_config
 }
 
 func main() {
-	// config service
-	lib.Debug(4, "config=", config)
-	tcp, err := net.Listen("tcp", config.Address)
-	if err != nil {
-		lib.Fail(2, err)
+	address := fmt.Sprintf("%s:%v", config.Host, config.Port)
+	identity, err := sipuri.Parse(config.Identity)
+	if err == nil && len(identity.User()) < 1 {
+		err = fmt.Errorf("no user in registration identity")
 	}
-	err = mml.Configure(config)
 	if err != nil {
-		lib.Fail(3, err)
+		lib.Fail(99, err, config.Identity)
 	}
 
+	lib.Debug(3, "prefix=", args.Prefix, ", bind=", address)
+	register := sipuri.New(identity.User(), identity.Host()+":"+identity.Port())
+	sip := osip.New(osip.Config{
+		Agent:    "netmouth/" + version,
+		Ipv6:     config.Ipv6,
+		Server:   config.Server,
+		Identity: register.User(),
+		Secret:   identity.Password(),
+		Refresh:  config.Refresh,
+		NoMedia:  true,
+	})
+
 	// signal handler...
-	running := true
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	go func() {
-		defer tcp.Close()
-		for running {
+		defer sip.Close()
+		for {
 			switch <-signals {
 			case os.Interrupt: // sigint/ctrl-c
 				fmt.Println()
-				running = false
+				return
 			case syscall.SIGTERM: // normal exit
-				running = false
+				return
 			case syscall.SIGHUP: // cleanup
 				lib.Info("reload service")
 				lib.LoggerRestart()
@@ -175,28 +195,21 @@ func main() {
 		}
 	}()
 
-	// run service
-	lib.Info("start service")
-	go mml.Startup(config)
-	go manager.Startup()
-	for {
-		client, err := tcp.Accept()
-		if err != nil {
-			if running {
-				lib.Error(err)
+	events := make(chan osip.Event, config.Buffer)
+	go func(ch <-chan osip.Event) {
+		for {
+			event := <-ch
+			lib.Debug(2, "event type: ", event.Type)
+			if event.Type == osip.EVT_SHUTDOWN {
+				return
 			}
-			running = false
-			break
 		}
-		lock.RLock()
-		defer lock.RUnlock()
-		fmt.Fprint(client, config.Banner+"\r\n")
-		NewSession(client)
-	}
+	}(events)
 
-	// shutdown sessions
-	tcp.Close()
-	manager.Shutdown()
-	mml.Shutdown()
-	lib.Info("stopped service")
+	lib.Info("start service on ", address)
+	err = sip.Listen(address, events)
+	if err != nil {
+		lib.Fail(1, err)
+	}
+	lib.Info("stop service")
 }
