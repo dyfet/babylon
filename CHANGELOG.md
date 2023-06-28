@@ -1,7 +1,9 @@
 # Release Notes
 
 ## v0.1.2
-- In progress
+- SIP request handling and text receive
+- Decode SIP message bodies
+- Convert Timeout events to Idle
 
 ## v0.1.1
 - Fix custom.conf and registration parsing

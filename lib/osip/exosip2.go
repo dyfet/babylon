@@ -75,6 +75,14 @@ type Event struct {
 	Status  SIP_STATUS
 	Content string
 	Body    []byte
+	Call    int
+	Tran    int
+	Dialog  int
+	From    string
+	To      string
+	Display string
+	Subject string
+	Expires int
 }
 
 func (ctx *Context) Lock() {
@@ -198,10 +206,10 @@ func (ctx *Context) ListenAndServe(address string, out chan<- Event) error {
 		return fmt.Errorf("sip error: %d", result)
 	}
 
-	var event Event = Event{Context: ctx, Type: EVT_STARTUP, Status: SIP_OK}
+	var event Event = Event{Context: ctx, Type: EVT_STARTUP, Status: SIP_OK, Call: -1, Tran: -1, Dialog: -1, Expires: -1}
 	out <- event
 	for !ctx.closed {
-		event = Event{Context: ctx, Type: EVT_IDLE, Status: SIP_OK}
+		event = Event{Context: ctx, Type: EVT_IDLE, Status: SIP_OK, Call: -1, Tran: -1, Dialog: -1, Expires: -1}
 		evt := C.eXosip_event_wait(ctx.context, C.int(ctx.Timeout/1000), C.int(ctx.Timeout%1000))
 		if evt == nil {
 			if !ctx.timeouts {
@@ -213,8 +221,31 @@ func (ctx *Context) ListenAndServe(address string, out chan<- Event) error {
 		}
 
 		ctx.timeouts = false
+		request := evt.request
 		response := evt.response
 		switch C.evt_type(evt) {
+		case C.EXOSIP_MESSAGE_NEW:
+			event.Type = EVT_MESSAGE
+			event.Status = SIP_OK
+			if request == nil {
+				event.Reply(SIP_BAD_REQUEST)
+				break
+			}
+
+			status := event.headers(request)
+			if status != SIP_OK {
+				event.Reply(status)
+				break
+			}
+
+			switch C.GoString(request.sip_method) {
+			case "MESSAGE":
+				event.Body, event.Content = create_body(request, 0)
+				out <- event
+			default:
+				event.Type = EVT_INVALID
+				event.Reply(SIP_METHOD_NOT_ALLOWED)
+			}
 		case C.EXOSIP_REGISTRATION_SUCCESS:
 			ctx.fails = 0
 			if ctx.online {
@@ -249,7 +280,7 @@ func (ctx *Context) ListenAndServe(address string, out chan<- Event) error {
 		C.eXosip_event_free(evt)
 	}
 
-	event = Event{Context: nil, Type: EVT_SHUTDOWN, Status: SIP_OK}
+	event = Event{Context: nil, Type: EVT_SHUTDOWN, Status: SIP_OK, Call: -1, Tran: -1, Dialog: -1, Expires: -1}
 	out <- event
 	ctx.active = -1
 	ctx.online = false
@@ -309,4 +340,70 @@ func create_body(msg *C.osip_message_t, index int) ([]byte, string) {
 		return data, C.GoString(content.ctype)
 	}
 	return data, C.GoString(content.ctype) + "/" + C.GoString(content.subtype)
+}
+
+func (event *Event) Reply(status SIP_STATUS) {
+	event.Status = status
+	event.sendReply(nil)
+}
+
+func (event *Event) makeReply() *C.osip_message_t {
+	ctx := event.Context
+	tid := C.int(event.Tran)
+	status := C.int(event.Status)
+	switch event.Type {
+	case EVT_MESSAGE:
+		return C.message_response(ctx.context, tid, status)
+	}
+	return nil
+}
+
+func (event *Event) sendReply(msg *C.osip_message_t) {
+	ctx := event.Context
+	switch event.Type {
+	case EVT_MESSAGE, EVT_INVALID:
+		ctx.Lock()
+		defer ctx.Unlock()
+		C.eXosip_message_send_answer(ctx.context, C.int(event.Tran), C.int(event.Status), msg)
+	default:
+		return
+	}
+}
+
+func (event *Event) headers(msg *C.osip_message_t) SIP_STATUS {
+	from := msg.from
+	if from == nil || from.url == nil {
+		return SIP_ADDRESS_INCOMPLETE
+	}
+
+	from_uri := C.get_url(from.url)
+	if from == nil {
+		return SIP_ADDRESS_INCOMPLETE
+	}
+	event.From = C.GoString(from_uri)
+	defer C.release(unsafe.Pointer(from_uri))
+
+	if from.displayname != nil {
+		event.Display = C.GoString(from.displayname)
+	}
+
+	to := msg.to
+	if to == nil || to.url == nil {
+		return SIP_ADDRESS_INCOMPLETE
+	}
+
+	to_uri := C.get_url(to.url)
+	if to == nil {
+		return SIP_ADDRESS_INCOMPLETE
+	}
+	event.To = C.GoString(to_uri)
+	defer C.release(unsafe.Pointer(to_uri))
+
+	event.Expires = int(C.get_expires(msg, 0))
+	subject := C.get_subject(msg, 0)
+	if subject != nil {
+		event.Subject = C.GoString(subject)
+	}
+
+	return SIP_OK
 }

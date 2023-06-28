@@ -242,6 +242,21 @@ func main() {
 				} else {
 					lib.Info("going online; identity=", ctx.GetIdentity())
 				}
+			case osip.EVT_MESSAGE:
+				if event.Status != osip.SIP_OK {
+					break
+				}
+				if event.Content == "message/imdn+xml" {
+					event.Reply(osip.SIP_OK)
+					break
+				}
+				if event.Content != "text/plain" {
+					lib.Debug(2, "ignored message input ", event.Content)
+					event.Reply(osip.SIP_NOT_ACCEPTABLE_HERE)
+					break
+				}
+				lib.Debug(2, "message from ", event.From, "; text=", string(event.Body))
+				event.Reply(osip.SIP_OK)
 			}
 		}
 	}(events)

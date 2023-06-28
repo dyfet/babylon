@@ -26,5 +26,7 @@ const (
 	EVT_IDLE     EVT_TYPE = "idle"
 	EVT_STARTUP  EVT_TYPE = "startup"
 	EVT_SHUTDOWN EVT_TYPE = "shutdown"
+	EVT_INVALID  EVT_TYPE = "invalid"
 	EVT_REGISTER EVT_TYPE = "register"
+	EVT_MESSAGE  EVT_TYPE = "message"
 )

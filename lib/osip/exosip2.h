@@ -33,6 +33,40 @@ void set_option(struct eXosip_t *ctx, int option, int value) {
 	eXosip_set_option(ctx, option, &value);
 }
 
+char *get_url(osip_uri_t *uri) {
+    char *str = NULL;
+    osip_uri_to_str(uri, &str);
+    return str;
+}
+
+char *get_subject(osip_message_t *msg, int index) {
+    osip_header_t *header = NULL;
+    osip_message_get_subject(msg, index, &header);
+    if(header && header->hvalue)
+        return header->hvalue;
+    return NULL;
+}
+
+int get_expires(osip_message_t *msg, int index) {
+    osip_header_t *header = NULL;
+    osip_message_get_expires(msg, index, &header);
+    if(header && header->hvalue)
+        return atoi(header->hvalue);
+    return -1;
+}
+
+osip_message_t *message_response(struct eXosip_t *ctx, int tid, int status) {
+    osip_message_t *msg = NULL;
+    eXosip_message_build_answer(ctx, tid, status, &msg);
+    return msg;
+}
+
+osip_message_t *call_response(struct eXosip_t *ctx, int tid, int status) {
+    osip_message_t *msg = NULL;
+    eXosip_call_build_answer(ctx, tid, status, &msg);
+    return msg;
+}
+
 content_type_t get_content(osip_message_t *msg) {
     content_type_t res = {NULL, NULL};
     osip_content_type_t *ctype = osip_message_get_content_type(msg);
