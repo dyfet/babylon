@@ -27,6 +27,19 @@ void set_option(struct eXosip_t *ctx, int option, int value) {
 	eXosip_set_option(ctx, option, &value);
 }
 
+void add_credentials(struct eXosip_t *ctx, const char *user, const char *secret) {
+    eXosip_add_authentication_info(ctx, user, user, secret, NULL, NULL);
+}
+
+int register_identity(struct eXosip_t *ctx, const char *identity, const char *route, int expires) {
+    osip_message_t *msg = NULL;
+    int rid = eXosip_register_build_initial_register(ctx, identity, route, NULL, expires, &msg);
+    if(rid > -1) {
+        eXosip_register_send_register(ctx, rid, msg);
+    }
+    return rid;
+}
+
 int find_port(struct eXosip_t *ctx, int proto, int tls) {
 	if(proto)
 		proto = IPPROTO_TCP;
@@ -60,6 +73,10 @@ int sip_listen(struct eXosip_t *ctx, const char *host, int port, int family, int
 		host = NULL;
 
 	return eXosip_listen_addr(ctx, proto, host, port, family, tls);
+}
+
+int evt_type(eXosip_event_t *evt) {
+    return evt->type;
 }
 
 void sip_unregister(struct eXosip_t *ctx, int rid) {

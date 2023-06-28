@@ -1,7 +1,8 @@
 # Release Notes
 
 ## v0.1.1
-- In progress
+- Fix custom.conf and registration parsing
+- SIP registation is now functional
 
 ## v0.1.0
 - Netmouth SIP TTS service started

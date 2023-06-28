@@ -16,7 +16,6 @@
 package osip
 
 type SIP_STATUS int
-type EVT_TYPE string
 
 const (
 	SIP_TRYING     SIP_STATUS = 100
@@ -101,10 +100,6 @@ const (
 	SIP_NOT_ACCEPTABLE_ANYWHERE SIP_STATUS = 606
 	SIP_UNWANTED                SIP_STATUS = 607
 	SIP_REJECTED                SIP_STATUS = 608
-)
 
-const (
-	EVT_TIMEOUT  EVT_TYPE = "timeout"
-	EVT_STARTUP  EVT_TYPE = "startup"
-	EVT_SHUTDOWN EVT_TYPE = "shutdown"
+	SIP_UNKNOWN SIP_STATUS = 999
 )

@@ -54,6 +54,11 @@ type Config struct {
 	Server   string `ini:"server"`
 	Identity string `ini:"identity"`
 	Secret   string `ini:"secret"`
+	User     string `ini:"user"`
+
+	// more internal...
+	register string
+	route    string
 }
 
 var (
@@ -117,7 +122,7 @@ func load() {
 		Port:     args.Port,
 		Server:   "sip:localhost",
 		Identity: "sip:88@localhost",
-		Refresh:  300,
+		Refresh:  60,
 		Timeout:  500,
 	}
 
@@ -126,6 +131,7 @@ func load() {
 		// map and reset rom args if not default
 		configs.Section("sip").MapTo(&new_config)
 		configs.Section("tts").MapTo(&new_config)
+		configs.Section("netmouth").MapTo(&new_config)
 		if args.Port != 0 {
 			new_config.Port = args.Port
 		}
@@ -145,6 +151,28 @@ func load() {
 		lib.Error(err)
 	}
 
+	identity, err := sipuri.Parse(new_config.Identity)
+	if err == nil && len(identity.User()) < 1 && len(new_config.User) < 1 {
+		err = fmt.Errorf("no user for registration identity")
+	}
+	if err != nil {
+		lib.Fail(99, err, config.Identity)
+	}
+
+	new_config.register = sipuri.New(identity.User(), identity.Host()).String()
+	if len(new_config.Secret) < 1 {
+		new_config.Secret = identity.Password()
+	}
+	if len(new_config.User) < 1 {
+		new_config.User = identity.User()
+	}
+
+	route, err := sipuri.Parse(new_config.Server)
+	if err != nil {
+		lib.Fail(99, err, new_config.Server)
+	}
+	new_config.route = "sip:" + route.Host()
+
 	// constraints and flags
 	if new_config.Host == "*" {
 		new_config.Host = ""
@@ -156,37 +184,20 @@ func load() {
 
 func main() {
 	address := fmt.Sprintf("%s:%v", config.Host, config.Port)
-	identity, err := sipuri.Parse(config.Identity)
-	if err == nil && len(identity.User()) < 1 {
-		err = fmt.Errorf("no user in registration identity")
-	}
-	if err != nil {
-		lib.Fail(99, err, config.Identity)
-	}
-
 	route, err := sipuri.Parse(config.Server)
 	if err != nil {
 		lib.Fail(99, err, config.Server)
 	}
 
-	register := sipuri.New(identity.User(), identity.Host())
 	lib.Debug(3, "prefix=", args.Prefix, ", bind=", address)
-	lib.Debug(3, "server=", "sip:"+route.Host(), ", identity=", register)
-
-	secret := identity.Password()
-	if len(secret) < 1 {
-		secret = config.Secret
-	}
+	lib.Debug(3, "server=", "sip:"+route.Host(), ", identity=", config.register)
 
 	sip := osip.New(osip.Config{
-		Agent:    "netmouth/" + version,
-		Ipv6:     config.Ipv6,
-		Server:   "sip:" + route.Host(),
-		Identity: register.String(),
-		Username: identity.User(),
-		Password: secret,
-		Refresh:  config.Refresh,
-		NoMedia:  true,
+		Agent:   "netmouth/" + version,
+		Ipv6:    config.Ipv6,
+		Server:  config.route,
+		Refresh: config.Refresh,
+		NoMedia: true,
 	})
 
 	// signal handler...
@@ -206,6 +217,10 @@ func main() {
 				lib.LoggerRestart()
 				runtime.GC()
 				load()
+				if sip.SetRoute(config.route) {
+					lib.Info("changed route to ", config.route)
+				}
+				sip.Register(config.Identity, config.User, config.Secret)
 			}
 		}
 	}()
@@ -214,15 +229,25 @@ func main() {
 	go func(ch <-chan osip.Event) {
 		for {
 			event := <-ch
-			lib.Debug(2, "event type: ", event.Type)
-			if event.Type == osip.EVT_SHUTDOWN {
+			ctx := event.Context
+			lib.Debug(4, "event type: ", event.Type)
+			switch event.Type {
+			case osip.EVT_SHUTDOWN:
 				return
+			case osip.EVT_STARTUP:
+				ctx.Register(config.Identity, config.User, config.Secret)
+			case osip.EVT_REGISTER:
+				if event.Status != osip.SIP_OK {
+					lib.Error("registration failure; status=", event.Status)
+				} else {
+					lib.Info("going online; identity=", ctx.GetIdentity())
+				}
 			}
 		}
 	}(events)
 
 	lib.Info("start service on ", address)
-	err = sip.Listen(address, events)
+	err = sip.ListenAndServe(address, events)
 	if err != nil {
 		lib.Fail(1, err)
 	}

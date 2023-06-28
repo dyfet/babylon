@@ -15,6 +15,13 @@
 
 package osip
 
+/*
+#include <stdlib.h>
+#include <string.h>
+*/
+import "C"
+import "unsafe"
+
 func (ctx *Context) GetSchema() string {
 	if ctx.Tls {
 		return "sips:"
@@ -22,6 +29,52 @@ func (ctx *Context) GetSchema() string {
 	return "sip:"
 }
 
+func (ctx *Context) GetIdentity() string {
+	ctx.Lock()
+	defer ctx.Unlock()
+
+	if ctx.active == -1 {
+		return ""
+	}
+
+	return ctx.identity
+}
+
 func (ctx *Context) IsOpen() bool {
 	return !ctx.closed
+}
+
+func (ctx *Context) IsActive() bool {
+	return ctx.active != -1
+}
+
+func (ctx *Context) IsOnline() bool {
+	return ctx.online
+}
+
+func (ctx *Context) SetRoute(route string) bool {
+	ctx.Lock()
+	defer ctx.Unlock()
+
+	if ctx.route == nil && len(route) < 1 {
+		return false
+	}
+
+	cs_route := C.CString(route)
+	if ctx.route != nil && C.strcmp(ctx.route, cs_route) == 0 {
+		C.free(unsafe.Pointer(cs_route))
+		return false
+	}
+
+	if ctx.route != nil {
+		C.free(unsafe.Pointer(ctx.route))
+	}
+
+	if len(route) > 0 {
+		ctx.route = cs_route
+	} else {
+		C.free(unsafe.Pointer(cs_route))
+		ctx.route = nil
+	}
+	return true
 }

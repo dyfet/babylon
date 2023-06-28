@@ -46,11 +46,8 @@ type Config struct {
 	NoMedia bool
 
 	// credentials, refresh set if login
-	Refresh  int
-	Server   string
-	Identity string
-	Username string
-	Password string
+	Refresh int
+	Server  string
 }
 
 type Context struct {
@@ -59,15 +56,22 @@ type Context struct {
 	Host    string
 	Port    int
 	Tls     bool
-	closed  bool
-	active  int // actively registered (rid)
-	route   *C.char
+
+	// internals...
+	closed   bool
+	active   int // actively registered (rid)
+	online   bool
+	route    *C.char
+	fails    int
+	identity string
+	username string
+	password string
 }
 
 type Event struct {
-	Sip    *Context
-	Type   EVT_TYPE
-	Status SIP_STATUS
+	Context *Context
+	Type    EVT_TYPE
+	Status  SIP_STATUS
 }
 
 func (ctx *Context) Lock() {
@@ -78,6 +82,37 @@ func (ctx *Context) Unlock() {
 	C.eXosip_unlock(ctx.context)
 }
 
+func (ctx *Context) Register(identity, user, secret string) error {
+	// if no change, skip...
+	if ctx.active != -1 && user == ctx.username && secret == ctx.password {
+		return nil
+	}
+
+	ctx.Unregister()
+	ctx.Lock()
+	defer ctx.Unlock()
+	C.eXosip_clear_authentication_info(ctx.context)
+	if len(secret) > 0 {
+		cs_user := C.CString(user)
+		cs_secret := C.CString(secret)
+		defer C.free(unsafe.Pointer(cs_user))
+		defer C.free(unsafe.Pointer(cs_secret))
+		C.add_credentials(ctx.context, cs_user, cs_secret)
+	}
+	cs_identity := C.CString(identity)
+	defer C.free(unsafe.Pointer(cs_identity))
+	ctx.active = int(C.register_identity(ctx.context, cs_identity, ctx.route, C.int(ctx.Refresh)))
+	if ctx.active > -1 {
+		ctx.username = user
+		ctx.password = secret
+		ctx.identity = identity
+		return nil
+	}
+	err := fmt.Errorf("registration failed; code=%d", ctx.active)
+	ctx.active = -1
+	return err
+}
+
 func (ctx *Context) Unregister() {
 	if ctx.active == -1 {
 		return
@@ -86,13 +121,15 @@ func (ctx *Context) Unregister() {
 	ctx.Lock()
 	defer ctx.Unlock()
 	C.sip_unregister(ctx.context, C.int(ctx.active))
+	ctx.active = -1
+	ctx.fails = 0
 }
 
 func (ctx *Context) Close() {
 	if !ctx.closed {
 		ctx.closed = true
 		ctx.Unregister()
-		for ctx.active != -1 {
+		for ctx.online {
 			time.Sleep(time.Second)
 		}
 		C.eXosip_quit(ctx.context)
@@ -110,7 +147,13 @@ func (ctx *Context) Automatic() {
 	C.eXosip_automatic_action(ctx.context)
 }
 
-func (ctx *Context) Listen(address string, out chan<- Event) error {
+func (ctx *Context) automatic_action(evt *C.eXosip_event_t) {
+	ctx.Lock()
+	defer ctx.Unlock()
+	C.eXosip_default_action(ctx.context, evt)
+}
+
+func (ctx *Context) ListenAndServe(address string, out chan<- Event) error {
 	host, port, err := net.SplitHostPort(address)
 
 	if err != nil {
@@ -151,15 +194,11 @@ func (ctx *Context) Listen(address string, out chan<- Event) error {
 	if result != 0 {
 		return fmt.Errorf("sip error: %d", result)
 	}
-	return ctx.dispatch(out)
-}
 
-func (ctx *Context) dispatch(out chan<- Event) error {
-	var event Event = Event{Sip: ctx, Type: EVT_STARTUP, Status: SIP_OK}
+	var event Event = Event{Context: ctx, Type: EVT_STARTUP, Status: SIP_OK}
 	out <- event
-
 	for !ctx.closed {
-		event = Event{Sip: ctx, Type: EVT_TIMEOUT, Status: SIP_OK}
+		event = Event{Context: ctx, Type: EVT_TIMEOUT, Status: SIP_OK}
 		evt := C.eXosip_event_wait(ctx.context, C.int(ctx.Timeout/1000), C.int(ctx.Timeout%1000))
 		if evt == nil {
 			out <- event
@@ -167,12 +206,45 @@ func (ctx *Context) dispatch(out chan<- Event) error {
 			continue
 		}
 
+		response := evt.response
+		switch C.evt_type(evt) {
+		case C.EXOSIP_REGISTRATION_SUCCESS:
+			ctx.fails = 0
+			if ctx.online {
+				break
+			}
+			event.Type = EVT_REGISTER
+			event.Status = SIP_OK
+			if ctx.active != -1 {
+				ctx.online = true
+			} else {
+				ctx.online = false
+			}
+			out <- event
+		case C.EXOSIP_REGISTRATION_FAILURE:
+			event.Type = EVT_REGISTER
+			ctx.fails = ctx.fails + 1
+			if response == nil {
+				event.Status = SIP_UNKNOWN
+			} else {
+				event.Status = SIP_STATUS(response.status_code)
+			}
+			if ctx.fails < 2 && ctx.active != -1 && (event.Status == SIP_UNAUTHORIZED || event.Status == SIP_PROXY_AUTH_REQUIRED) {
+				ctx.automatic_action(evt)
+				break
+			}
+			ctx.online = false
+			out <- event
+		default:
+			ctx.automatic_action(evt)
+		}
 		C.eXosip_event_free(evt)
 	}
 
-	event = Event{Sip: nil, Type: EVT_SHUTDOWN, Status: SIP_OK}
+	event = Event{Context: nil, Type: EVT_SHUTDOWN, Status: SIP_OK}
 	out <- event
 	ctx.active = -1
+	ctx.online = false
 	return nil
 }
 
