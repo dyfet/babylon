@@ -63,6 +63,7 @@ type Context struct {
 	online   bool
 	route    *C.char
 	fails    int
+	timeouts bool
 	identity string
 	username string
 	password string
@@ -201,11 +202,15 @@ func (ctx *Context) ListenAndServe(address string, out chan<- Event) error {
 		event = Event{Context: ctx, Type: EVT_TIMEOUT, Status: SIP_OK}
 		evt := C.eXosip_event_wait(ctx.context, C.int(ctx.Timeout/1000), C.int(ctx.Timeout%1000))
 		if evt == nil {
-			out <- event
+			if !ctx.timeouts {
+				out <- event
+			}
+			ctx.timeouts = true
 			ctx.Automatic()
 			continue
 		}
 
+		ctx.timeouts = false
 		response := evt.response
 		switch C.evt_type(evt) {
 		case C.EXOSIP_REGISTRATION_SUCCESS:

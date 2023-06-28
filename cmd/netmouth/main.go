@@ -122,7 +122,7 @@ func load() {
 		Port:     args.Port,
 		Server:   "sip:localhost",
 		Identity: "sip:88@localhost",
-		Refresh:  60,
+		Refresh:  300,
 		Timeout:  500,
 	}
 
@@ -230,7 +230,7 @@ func main() {
 		for {
 			event := <-ch
 			ctx := event.Context
-			lib.Debug(4, "event type: ", event.Type)
+			lib.Debug(3, "event type: ", event.Type)
 			switch event.Type {
 			case osip.EVT_SHUTDOWN:
 				return
