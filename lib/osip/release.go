@@ -23,7 +23,7 @@ func IsDebug() bool {
 }
 
 const (
-	EVT_TIMEOUT EVT_TYPE = iota
+	EVT_IDLE EVT_TYPE = iota
 	EVT_STARTUP
 	EVT_SHUTDOWN
 	EVT_REGISTER

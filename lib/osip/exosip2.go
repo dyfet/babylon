@@ -17,7 +17,7 @@ package osip
 
 /*
 #cgo CFLAGS: -I/usr/pkg/include -I/usr/local/include
-#cgo LDFLAGS: -L/usr/pkg/lib -L/usr/local/lib -leXosip2
+#cgo LDFLAGS: -L/usr/pkg/lib -L/usr/local/lib -leXosip2 -losip2 -losipparser2
 #include "exosip2.h"
 */
 import "C"
@@ -73,6 +73,8 @@ type Event struct {
 	Context *Context
 	Type    EVT_TYPE
 	Status  SIP_STATUS
+	Content string
+	Body    []byte
 }
 
 func (ctx *Context) Lock() {
@@ -199,7 +201,7 @@ func (ctx *Context) ListenAndServe(address string, out chan<- Event) error {
 	var event Event = Event{Context: ctx, Type: EVT_STARTUP, Status: SIP_OK}
 	out <- event
 	for !ctx.closed {
-		event = Event{Context: ctx, Type: EVT_TIMEOUT, Status: SIP_OK}
+		event = Event{Context: ctx, Type: EVT_IDLE, Status: SIP_OK}
 		evt := C.eXosip_event_wait(ctx.context, C.int(ctx.Timeout/1000), C.int(ctx.Timeout%1000))
 		if evt == nil {
 			if !ctx.timeouts {
@@ -222,6 +224,7 @@ func (ctx *Context) ListenAndServe(address string, out chan<- Event) error {
 			event.Status = SIP_OK
 			if ctx.active != -1 {
 				ctx.online = true
+				event.Body, event.Content = create_body(response, 0)
 			} else {
 				ctx.online = false
 			}
@@ -273,4 +276,37 @@ func New(config Config) *Context {
 		C.eXosip_set_user_agent(ctx.context, cs_agent)
 	}
 	return ctx
+}
+
+func create_body(msg *C.osip_message_t, index int) ([]byte, string) {
+	if msg == nil {
+		return nil, ""
+	}
+
+	body := C.get_body(msg, C.int(index))
+	if body == nil {
+		return nil, ""
+	}
+
+	ptr := uintptr(unsafe.Pointer(body.body))
+	size := int(body.length)
+
+	if size == 0 || ptr == 0 {
+		return nil, ""
+	}
+
+	data := make([]byte, size)
+	for pos := 0; pos < size; pos++ {
+		data[pos] = *(*byte)(unsafe.Pointer(ptr + uintptr(pos)))
+	}
+
+	content := C.get_content(msg)
+	if content.ctype == nil {
+		return data, ""
+	}
+
+	if content.subtype == nil {
+		return data, C.GoString(content.ctype)
+	}
+	return data, C.GoString(content.ctype) + "/" + C.GoString(content.subtype)
 }

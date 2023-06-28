@@ -22,9 +22,32 @@
 #include <netinet/in.h>
 
 #include <eXosip2/eXosip.h>
+#include <osipparser2/osip_port.h>
+
+typedef struct content_type {
+    char *ctype;
+    char *subtype;
+} content_type_t;
 
 void set_option(struct eXosip_t *ctx, int option, int value) {
 	eXosip_set_option(ctx, option, &value);
+}
+
+content_type_t get_content(osip_message_t *msg) {
+    content_type_t res = {NULL, NULL};
+    osip_content_type_t *ctype = osip_message_get_content_type(msg);
+    if(ctype == NULL || ctype->type == NULL)
+        return res;
+
+    res.ctype = ctype->type;
+    res.subtype = ctype->subtype;
+    return res;
+}
+
+osip_body_t *get_body(osip_message_t *msg, int index) {
+    osip_body_t *body = NULL;
+    osip_message_get_body(msg, index, &body);
+    return body;
 }
 
 void add_credentials(struct eXosip_t *ctx, const char *user, const char *secret) {
@@ -87,14 +110,9 @@ void sip_unregister(struct eXosip_t *ctx, int rid) {
 }
 
 void release(void *p) {
-	if(p != NULL) {
+    if(osip_free_func)
+        osip_free_func(p);
+    else
         free(p);
-/*
-		if(osip_free_func)
-			osip_free_func(p);
-		else
-			free(p);
-*/
-	}
 }
 

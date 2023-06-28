@@ -23,7 +23,7 @@ func IsDebug() bool {
 }
 
 const (
-	EVT_TIMEOUT  EVT_TYPE = "timeout"
+	EVT_IDLE     EVT_TYPE = "idle"
 	EVT_STARTUP  EVT_TYPE = "startup"
 	EVT_SHUTDOWN EVT_TYPE = "shutdown"
 	EVT_REGISTER EVT_TYPE = "register"
