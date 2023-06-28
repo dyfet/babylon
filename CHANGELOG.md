@@ -1,5 +1,8 @@
 # Release Notes
 
+## v0.1.2
+- In progress
+
 ## v0.1.1
 - Fix custom.conf and registration parsing
 - SIP registation is now functional
