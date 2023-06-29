@@ -315,21 +315,19 @@ func create_body(msg *C.osip_message_t, index int) ([]byte, string) {
 	}
 
 	body := C.get_body(msg, C.int(index))
-	if body == nil {
+	if body == nil || body.body == nil {
 		return nil, ""
 	}
 
-	ptr := uintptr(unsafe.Pointer(body.body))
 	size := int(body.length)
-
-	if size == 0 || ptr == 0 {
+	if size == 0 {
 		return nil, ""
 	}
 
 	data := make([]byte, size)
-	for pos := 0; pos < size; pos++ {
-		data[pos] = *(*byte)(unsafe.Pointer(ptr + uintptr(pos)))
-	}
+	ptr := unsafe.Pointer(body.body)
+	out := unsafe.Pointer(&data[0])
+	C.memcpy(out, ptr, C.size_t(size))
 
 	content := C.get_content(msg)
 	if content.ctype == nil {
