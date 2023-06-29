@@ -1,6 +1,7 @@
 # Release Notes
 
 ## v0.1.2
+- Update make support for dist and clean
 - SIP request handling and text receive
 - Decode SIP message bodies
 - Convert Timeout events to Idle

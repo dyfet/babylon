@@ -4,8 +4,6 @@
 
 .PHONY: dist distclean
 
-GOVER=$(shell grep ^go <go.mod)
-
 dist:	required
 	@rm -f $(PROJECT)-*.tar.gz $(PROJECT)-*.tar
 	@git archive -o $(PROJECT)-$(VERSION).tar --format tar --prefix=$(PROJECT)-$(VERSION)/ v$(VERSION) 2>/dev/null || git archive -o $(PROJECT)-$(VERSION).tar --format tar --prefix=$(PROJECT)-$(VERSION)/ HEAD
@@ -14,7 +12,6 @@ dist:	required
 	@gzip $(PROJECT)-$(VERSION).tar
 
 distclean:	clean
-	@rm -rf vendor
+	@if test -f go.mod ; then rm -rf vendor ; fi
 	@rm -f go.sum
-	@echo "module $(PROJECT)\n\n$(GOVER)" >go.mod
-	@$(MAKE) required
+	@if test -f go.mod ; then ( echo "module $(PROJECT)" ; echo ; echo "$(GOVER)" ) > go.mod ; fi

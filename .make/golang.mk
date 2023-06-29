@@ -8,6 +8,7 @@ ifndef	BUILD_MODE
 BUILD_MODE := default
 endif
 
+GOVER=$(shell grep ^go <go.mod)
 TARGET := $(CURDIR)/target
 export GOCACHE := $(TARGET)/cache
 export PATH := $(TARGET)/debug:${PATH}

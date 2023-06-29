@@ -11,5 +11,5 @@ require (
 
 require (
 	github.com/alexflint/go-scalar v1.1.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
 )
