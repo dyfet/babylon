@@ -2,7 +2,7 @@ pipeline:
   merge:
     image: alpine
     commands:
-      - apk add --no-cache alpine-sdk go
+      - apk add --no-cache alpine-sdk go alsa-lib-dev
       - apk add libexosip2-dev libosip2-dev --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing
       - go build ./...
       - go test ./...

@@ -4,6 +4,7 @@ target/
 vendor/
 .vs/
 
+test/tts/
 test/*.conf
 test/*.crt
 test/*.key

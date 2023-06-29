@@ -1,7 +1,7 @@
 # Release Notes
 
 ## v0.1.3
-- In progress
+- Netmouth Speaks
 
 ## v0.1.2
 - Update make support for dist and clean

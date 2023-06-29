@@ -29,6 +29,10 @@ import (
 	"github.com/alexflint/go-arg"
 	"github.com/percivalalb/sipuri"
 	"gopkg.in/ini.v1"
+
+	htgotts "github.com/hegedustibor/htgo-tts"
+	handlers "github.com/hegedustibor/htgo-tts/handlers"
+	//voices "github.com/hegedustibor/htgo-tts/voices"
 )
 
 // Argument parser....
@@ -55,6 +59,11 @@ type Config struct {
 	Identity string `ini:"identity"`
 	Secret   string `ini:"secret"`
 	User     string `ini:"user"`
+
+	// tts values
+	Proxy    string `ini:"proxy"`
+	Native   bool   `ini:"native"`
+	Language string `ini:"language"`
 
 	// more internal...
 	register string
@@ -107,7 +116,6 @@ func init() {
 	logPath := logPrefix + "/notmouth.log"
 	lib.Logger(args.Verbose, logPath)
 	load()
-	fmt.Printf("PREFIX %s\n", args.Prefix)
 	err := os.Chdir(args.Prefix)
 	if err != nil {
 		lib.Fail(1, err)
@@ -124,6 +132,8 @@ func load() {
 		Identity: "sip:88@localhost",
 		Refresh:  300,
 		Timeout:  500,
+		Language: "en",
+		Native:   true,
 	}
 
 	configs, err := ini.LoadSources(ini.LoadOptions{Loose: true, Insensitive: true}, args.Config, args.Prefix+"/custom.conf")
@@ -183,6 +193,7 @@ func load() {
 }
 
 func main() {
+	cache := args.Prefix + "/tts"
 	address := fmt.Sprintf("%s:%v", config.Host, config.Port)
 	route, err := sipuri.Parse(config.Server)
 	if err != nil {
@@ -191,6 +202,9 @@ func main() {
 
 	lib.Debug(3, "prefix=", args.Prefix, ", bind=", address)
 	lib.Debug(3, "server=", "sip:"+route.Host(), ", identity=", config.register)
+	os.RemoveAll(cache)
+	os.Mkdir(cache, 0770)
+	defer os.RemoveAll(cache)
 
 	sip := osip.New(osip.Config{
 		Agent:   "netmouth/" + version,
@@ -202,7 +216,9 @@ func main() {
 
 	// signal handler...
 	signals := make(chan os.Signal, 1)
+	texts := make(chan string, 32)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+
 	go func() {
 		defer sip.Close()
 		for {
@@ -221,12 +237,37 @@ func main() {
 					lib.Info("changed route to ", config.route)
 				}
 				sip.Register(config.Identity, config.User, config.Secret)
+				texts <- "-reload-"
 			}
 		}
 	}()
 
+	go func(say <-chan string) {
+		var handler handlers.PlayerInterface
+		handler = &handlers.Native{}
+		if !config.Native {
+			handler = &handlers.MPlayer{}
+		}
+
+		speach := htgotts.Speech{Folder: args.Prefix + "/tts", Language: config.Language, Handler: handler}
+		for {
+			text := <-say
+			switch text {
+			case "-reload-":
+				os.RemoveAll(cache)
+			case "":
+				continue
+			default:
+				err := speach.Speak(text)
+				if err != nil {
+					lib.Error(err)
+				}
+			}
+		}
+	}(texts)
+
 	events := make(chan osip.Event, config.Buffer)
-	go func(ch <-chan osip.Event) {
+	go func(ch <-chan osip.Event, say chan<- string) {
 		for {
 			event := <-ch
 			ctx := event.Context
@@ -255,11 +296,13 @@ func main() {
 					event.Reply(osip.SIP_NOT_ACCEPTABLE_HERE)
 					break
 				}
-				lib.Debug(2, "message from ", event.From, "; text=", string(event.Body))
+				text := string(event.Body)
+				lib.Debug(2, "message from ", event.From, "; text=", text)
 				event.Reply(osip.SIP_OK)
+				say <- text
 			}
 		}
-	}(events)
+	}(events, texts)
 
 	lib.Info("start service on ", address)
 	err = sip.ListenAndServe(address, events)
