@@ -249,7 +249,7 @@ func main() {
 			handler = &handlers.MPlayer{}
 		}
 
-		speach := htgotts.Speech{Folder: args.Prefix + "/tts", Language: config.Language, Handler: handler}
+		speach := htgotts.Speech{Folder: args.Prefix + "/tts", Language: config.Language, Handler: handler, Proxy: config.Proxy}
 		for {
 			text := <-say
 			switch text {
