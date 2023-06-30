@@ -1,5 +1,8 @@
 # Release Notes
 
+## v0.1.4
+- In progress
+
 ## v0.1.3
 - Netmouth Speaks
 
