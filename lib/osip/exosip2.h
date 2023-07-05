@@ -88,10 +88,16 @@ void add_credentials(struct eXosip_t *ctx, const char *user, const char *secret)
     eXosip_add_authentication_info(ctx, user, user, secret, NULL, NULL);
 }
 
-int register_identity(struct eXosip_t *ctx, const char *identity, const char *route, int expires) {
+int register_identity(struct eXosip_t *ctx, const char *identity, const char *route, int expires, const char *allow, const char *accept, const char *encoding) {
     osip_message_t *msg = NULL;
     int rid = eXosip_register_build_initial_register(ctx, identity, route, NULL, expires, &msg);
     if(rid > -1) {
+        if(allow)
+            osip_message_set_header(msg, ALLOW, allow);
+        if(accept)
+            osip_message_set_header(msg, ACCEPT, accept);
+        if(encoding)
+            osip_message_set_header(msg, ACCEPT_ENCODING, encoding);
         eXosip_register_send_register(ctx, rid, msg);
     }
     return rid;

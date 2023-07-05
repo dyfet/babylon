@@ -42,12 +42,13 @@ type Config struct {
 	Ipv6    bool
 	Tcp     bool
 	Timeout int
-	NoText  bool
-	NoMedia bool
 
 	// credentials, refresh set if login
-	Refresh int
-	Server  string
+	Refresh  int
+	Server   string
+	Allows   string
+	Accepts  string
+	Encoding string
 }
 
 type Context struct {
@@ -62,6 +63,9 @@ type Context struct {
 	active   int // actively registered (rid)
 	online   bool
 	route    *C.char
+	allow    *C.char
+	accept   *C.char
+	encoding *C.char
 	fails    int
 	timeouts bool
 	identity string
@@ -112,7 +116,7 @@ func (ctx *Context) Register(identity, user, secret string) error {
 	}
 	cs_identity := C.CString(identity)
 	defer C.free(unsafe.Pointer(cs_identity))
-	ctx.active = int(C.register_identity(ctx.context, cs_identity, ctx.route, C.int(ctx.Refresh)))
+	ctx.active = int(C.register_identity(ctx.context, cs_identity, ctx.route, C.int(ctx.Refresh), ctx.allow, ctx.accept, ctx.encoding))
 	if ctx.active > -1 {
 		ctx.username = user
 		ctx.password = secret
@@ -148,6 +152,18 @@ func (ctx *Context) Close() {
 
 		if ctx.route != nil {
 			C.free(unsafe.Pointer(ctx.route))
+		}
+
+		if ctx.allow != nil {
+			C.free(unsafe.Pointer(ctx.allow))
+		}
+
+		if ctx.accept != nil {
+			C.free(unsafe.Pointer(ctx.accept))
+		}
+
+		if ctx.encoding != nil {
+			C.free(unsafe.Pointer(ctx.encoding))
 		}
 	}
 }
@@ -295,6 +311,18 @@ func New(config Config) *Context {
 
 	if len(ctx.Server) > 0 {
 		ctx.route = C.CString(ctx.Server)
+	}
+
+	if len(ctx.Allows) > 0 {
+		ctx.allow = C.CString(ctx.Allows)
+	}
+
+	if len(ctx.Accepts) > 0 {
+		ctx.accept = C.CString(ctx.Accepts)
+	}
+
+	if len(ctx.Encoding) > 0 {
+		ctx.encoding = C.CString(ctx.Encoding)
 	}
 
 	if ctx.Timeout == 0 {

@@ -12,6 +12,7 @@ dist:	required
 	@gzip $(PROJECT)-$(VERSION).tar
 
 distclean:	clean
-	@if test -f go.mod ; then rm -rf vendor ; fi
-	@rm -f go.sum
+	@rm -rf vendor .cargo
+	@rm -f Cargo.lock go.sum
 	@if test -f go.mod ; then ( echo "module $(PROJECT)" ; echo ; echo "$(GOVER)" ) > go.mod ; fi
+	@if test -f Cargo.toml ; then cargo generate-lockfile ; fi

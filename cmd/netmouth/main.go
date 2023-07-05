@@ -207,11 +207,13 @@ func main() {
 	defer os.RemoveAll(cache)
 
 	sip := osip.New(osip.Config{
-		Agent:   "netmouth/" + version,
-		Ipv6:    config.Ipv6,
-		Server:  config.route,
-		Refresh: config.Refresh,
-		NoMedia: true,
+		Agent:    "netmouth/" + version,
+		Ipv6:     config.Ipv6,
+		Server:   config.route,
+		Refresh:  config.Refresh,
+		Allows:   "OPTIONS,MESSAGE",
+		Accepts:  "text/plain",
+		Encoding: "text/plain",
 	})
 
 	// signal handler...
