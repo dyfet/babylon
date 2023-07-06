@@ -74,19 +74,20 @@ type Context struct {
 }
 
 type Event struct {
-	Context *Context
-	Type    EVT_TYPE
-	Status  SIP_STATUS
-	Content string
-	Body    []byte
-	Call    int
-	Tran    int
-	Dialog  int
-	From    string
-	To      string
-	Display string
-	Subject string
-	Expires int
+	Context   *Context
+	Type      EVT_TYPE
+	Status    SIP_STATUS
+	Content   string
+	Body      []byte
+	Call      int
+	Tran      int
+	Dialog    int
+	From      string
+	To        string
+	Display   string
+	Subject   string
+	Expires   int
+	Timestamp time.Time
 }
 
 func (ctx *Context) Lock() {
@@ -222,10 +223,10 @@ func (ctx *Context) ListenAndServe(address string, out chan<- Event) error {
 		return fmt.Errorf("sip error: %d", result)
 	}
 
-	var event Event = Event{Context: ctx, Type: EVT_STARTUP, Status: SIP_OK, Call: -1, Tran: -1, Dialog: -1, Expires: -1}
+	var event Event = Event{Context: ctx, Type: EVT_STARTUP, Status: SIP_OK, Call: -1, Tran: -1, Dialog: -1, Expires: -1, Timestamp: time.Now()}
 	out <- event
 	for !ctx.closed {
-		event = Event{Context: ctx, Type: EVT_IDLE, Status: SIP_OK, Call: -1, Tran: -1, Dialog: -1, Expires: -1}
+		event = Event{Context: ctx, Type: EVT_IDLE, Status: SIP_OK, Call: -1, Tran: -1, Dialog: -1, Expires: -1, Timestamp: time.Now()}
 		evt := C.eXosip_event_wait(ctx.context, C.int(ctx.Timeout/1000), C.int(ctx.Timeout%1000))
 		if evt == nil {
 			if !ctx.timeouts {
@@ -296,7 +297,7 @@ func (ctx *Context) ListenAndServe(address string, out chan<- Event) error {
 		C.eXosip_event_free(evt)
 	}
 
-	event = Event{Context: nil, Type: EVT_SHUTDOWN, Status: SIP_OK, Call: -1, Tran: -1, Dialog: -1, Expires: -1}
+	event = Event{Context: nil, Type: EVT_SHUTDOWN, Status: SIP_OK, Call: -1, Tran: -1, Dialog: -1, Expires: -1, Timestamp: time.Now()}
 	out <- event
 	ctx.active = -1
 	ctx.online = false
@@ -317,13 +318,16 @@ func New(config Config) *Context {
 		ctx.allow = C.CString(ctx.Allows)
 	}
 
-	if len(ctx.Accepts) > 0 {
-		ctx.accept = C.CString(ctx.Accepts)
+	if len(ctx.Accepts) < 1 {
+		ctx.Accepts = "*/*"
 	}
 
-	if len(ctx.Encoding) > 0 {
-		ctx.encoding = C.CString(ctx.Encoding)
+	if len(ctx.Encoding) < 1 {
+		ctx.Encoding = "text/plain"
 	}
+
+	ctx.accept = C.CString(ctx.Accepts)
+	ctx.encoding = C.CString(ctx.Encoding)
 
 	if ctx.Timeout == 0 {
 		ctx.Timeout = 500
