@@ -25,11 +25,12 @@ lint:	required
 
 vet:	required
 	@go vet ./...
+	@govulncheck ./...
 
 fix:	required
 	@go fix ./...
 
-test:	vet
+test:
 	@go test ./...
 
 cover:	vet

@@ -1,7 +1,8 @@
 # Release Notes
 
 ## v0.1.4
-- In progress
+- Add timestamp to exosip event interface
+- Allow and accept settings
 
 ## v0.1.3
 - Netmouth Speaks
