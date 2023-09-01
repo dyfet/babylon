@@ -269,7 +269,6 @@ func main() {
 
 	events := make(chan osip.Event, config.Buffer)
 	go func(ch <-chan osip.Event, say chan<- string) {
-		lib.Info("service started on ", address)
 		defer lib.DaemonStop("stop service")
 		for {
 			event := <-ch
@@ -279,12 +278,15 @@ func main() {
 			case osip.EVT_SHUTDOWN:
 				return
 			case osip.EVT_STARTUP:
+				lib.DaemonLive("service started on ", ctx.Host, ":", ctx.Port)
 				ctx.Register(config.Identity, config.User, config.Secret)
 			case osip.EVT_REGISTER:
 				if event.Status != osip.SIP_OK {
+					lib.DaemonStatus("offline")
 					lib.Error("registration failure; status=", event.Status)
 				} else {
-					lib.DaemonLive("service ready as ", ctx.GetIdentity())
+					lib.DaemonStatus("online")
+					lib.Info("service online; id=", ctx.GetIdentity())
 				}
 			case osip.EVT_MESSAGE:
 				if event.Status != osip.SIP_OK {

@@ -1,7 +1,8 @@
 # Release Notes
 
 ## v0.1.5
-- In progress
+- Optional systemd support
+- Report correct address on startup
 
 ## v0.1.4
 - Add timestamp to exosip event interface
