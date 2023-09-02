@@ -1,5 +1,8 @@
 # Release Notes
 
+## v0.1.6
+- In progress
+
 ## v0.1.5
 - Optional systemd support
 - Report correct address on startup
