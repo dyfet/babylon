@@ -40,6 +40,9 @@ func DaemonLive(args ...interface{}) error {
 }
 
 func DaemonStatus(string) error {
+	if stopping {
+		return fmt.Errorf("already exiting")
+	}
 	return nil
 }
 

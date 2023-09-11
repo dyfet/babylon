@@ -1,7 +1,7 @@
 # Release Notes
 
 ## v0.1.6
-- In progress
+- Fix for BSD builds
 
 ## v0.1.5
 - Optional systemd support
