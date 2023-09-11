@@ -1,5 +1,8 @@
 # Release Notes
 
+## v0.1.7
+- In progress
+
 ## v0.1.6
 - Fix for BSD builds
 
