@@ -1,5 +1,8 @@
 # Release Notes
 
+## v0.2.1
+- In progress
+
 ## v0.2.0
 - Modernized go project with internal
 

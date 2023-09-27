@@ -10,7 +10,7 @@
 
 # Project constants
 PROJECT := babylon
-VERSION := 0.2.0
+VERSION := 0.2.1
 TESTDIR := $(PWD)/test
 
 .PHONY: all required version build debug release install clean
