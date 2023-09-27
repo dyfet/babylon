@@ -1,7 +1,7 @@
 # Release Notes
 
-## v0.1.7
-- In progress
+## v0.2.0
+- Modernized go project with internal
 
 ## v0.1.6
 - Fix for BSD builds

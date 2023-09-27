@@ -24,9 +24,10 @@ import (
 	"sync"
 	"syscall"
 
-	"babylon/lib"
 	"github.com/alexflint/go-arg"
 	"gopkg.in/ini.v1"
+
+	"babylon/internal/service"
 )
 
 // Argument parser....
@@ -95,11 +96,11 @@ func init() {
 
 	// setup service
 	logPath := logPrefix + "/f9600.log"
-	lib.Logger(args.Verbose, logPath)
+	service.Logger(args.Verbose, logPath)
 	load()
 	err := os.Chdir(args.Prefix)
 	if err != nil {
-		lib.Fail(1, err)
+		service.Fail(1, err)
 	}
 }
 
@@ -128,7 +129,7 @@ func load() {
 			new_config.Host = args.Host
 		}
 	} else {
-		lib.Error(err)
+		service.Error(err)
 	}
 
 	// constraints and flags
@@ -143,14 +144,14 @@ func load() {
 
 func main() {
 	// config service
-	lib.Debug(4, "config=", config)
+	service.Debug(4, "config=", config)
 	tcp, err := net.Listen("tcp", config.Address)
 	if err != nil {
-		lib.Fail(2, err)
+		service.Fail(2, err)
 	}
 	err = mml.Configure(config)
 	if err != nil {
-		lib.Fail(3, err)
+		service.Fail(3, err)
 	}
 
 	// signal handler...
@@ -167,11 +168,11 @@ func main() {
 			case syscall.SIGTERM: // normal exit
 				running = false
 			case syscall.SIGHUP: // cleanup
-				lib.DaemonReload("reload service")
-				lib.LoggerRestart()
+				service.DaemonReload("reload service")
+				service.LoggerRestart()
 				runtime.GC()
 				load()
-				lib.DaemonLive()
+				service.DaemonLive()
 			}
 		}
 	}()
@@ -180,12 +181,12 @@ func main() {
 	go mml.Startup(config)
 	go manager.Startup()
 	for {
-		lib.DaemonLive("start service")
-		defer lib.DaemonStop("stop service")
+		service.DaemonLive("start service")
+		defer service.DaemonStop("stop service")
 		client, err := tcp.Accept()
 		if err != nil {
 			if running {
-				lib.Error(err)
+				service.Error(err)
 			}
 			running = false
 			break

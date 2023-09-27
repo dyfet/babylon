@@ -16,7 +16,7 @@
 package main
 
 import (
-	"babylon/lib"
+	"babylon/internal/service"
 )
 
 // session manager
@@ -54,18 +54,18 @@ func (manager *Manager) Shutdown() {
 
 // process manager api until clean shutdown
 func (manager *Manager) Startup() {
-	lib.Debug(1, "manager running")
+	service.Debug(1, "manager running")
 	for {
 		select {
 		case session := <-manager.register:
 			manager.sessions[session] = true
-			lib.Debug(2, "adding session ", session.Remote)
+			service.Debug(2, "adding session ", session.Remote)
 		case session := <-manager.release:
 			if _, ok := manager.sessions[session]; ok {
 				delete(manager.sessions, session)
-				lib.Debug(2, "remove session ", session.Remote)
+				service.Debug(2, "remove session ", session.Remote)
 			} else {
-				lib.Warn("unknown session ", session.Remote)
+				service.Warn("unknown session ", session.Remote)
 			}
 		case <-manager.shutdown:
 			for s := range manager.sessions {

@@ -14,15 +14,19 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //go:build !debug
 
-package lib
+package exosip2
 
-func Logger(level int, path string) {
-	openLogger(level, path)
-}
-
-func Debug(level int, args ...interface{}) {
-}
+type EVT_TYPE int
 
 func IsDebug() bool {
 	return false
 }
+
+const (
+	EVT_IDLE EVT_TYPE = iota
+	EVT_STARTUP
+	EVT_SHUTDOWN
+	EVT_INVALID
+	EVT_REGISTER
+	EVT_MESSAGE
+)

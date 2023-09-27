@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"babylon/lib"
+	"babylon/internal/service"
 )
 
 // representation of an accepted client session when started
@@ -72,7 +72,7 @@ func (s *Session) requests() {
 
 		// process command or send
 		line = strings.Trim(line, "\r\n")
-		lib.Debug(5, "mml request ", line)
+		service.Debug(5, "mml request ", line)
 		if line == "quit" || line == "bye" {
 			break
 		}
@@ -82,7 +82,7 @@ func (s *Session) requests() {
 		text := <-s.result
 		s.update = time.Now()
 		if len(text) > 0 {
-			lib.Error(fmt.Errorf("MML Error on %s %s", s.Remote, text))
+			service.Error(fmt.Errorf("MML Error on %s %s", s.Remote, text))
 		}
 	}
 	manager.Release(s)

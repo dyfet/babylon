@@ -14,22 +14,19 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //go:build debug
 
-package lib
+package exosip2
 
-import (
-	"os"
-)
-
-func Logger(level int, path string) {
-	os.Remove(path)
-	openLogger(level, path)
-}
-
-// Debug output
-func Debug(level int, args ...interface{}) {
-	Output(level, args...)
-}
+type EVT_TYPE string
 
 func IsDebug() bool {
 	return true
 }
+
+const (
+	EVT_IDLE     EVT_TYPE = "idle"
+	EVT_STARTUP  EVT_TYPE = "startup"
+	EVT_SHUTDOWN EVT_TYPE = "shutdown"
+	EVT_INVALID  EVT_TYPE = "invalid"
+	EVT_REGISTER EVT_TYPE = "register"
+	EVT_MESSAGE  EVT_TYPE = "message"
+)

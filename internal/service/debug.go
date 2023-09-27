@@ -12,21 +12,24 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-//go:build !debug
+//go:build debug
 
-package osip
+package service
 
-type EVT_TYPE int
+import (
+	"os"
+)
 
-func IsDebug() bool {
-	return false
+func Logger(level int, path string) {
+	os.Remove(path)
+	openLogger(level, path)
 }
 
-const (
-	EVT_IDLE EVT_TYPE = iota
-	EVT_STARTUP
-	EVT_SHUTDOWN
-	EVT_INVALID
-	EVT_REGISTER
-	EVT_MESSAGE
-)
+// Debug output
+func Debug(level int, args ...interface{}) {
+	Output(level, args...)
+}
+
+func IsDebug() bool {
+	return true
+}

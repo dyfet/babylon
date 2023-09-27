@@ -23,13 +23,13 @@ import (
 	"sync"
 	"syscall"
 
-	"babylon/lib"
-	"babylon/lib/osip"
+	"babylon/internal/service"
 
 	"github.com/alexflint/go-arg"
 	"github.com/percivalalb/sipuri"
 	"gopkg.in/ini.v1"
 
+	osip "babylon/internal/exosip2"
 	htgotts "github.com/hegedustibor/htgo-tts"
 	handlers "github.com/hegedustibor/htgo-tts/handlers"
 	//voices "github.com/hegedustibor/htgo-tts/voices"
@@ -114,11 +114,11 @@ func init() {
 
 	// setup service
 	logPath := logPrefix + "/notmouth.log"
-	lib.Logger(args.Verbose, logPath)
+	service.Logger(args.Verbose, logPath)
 	load()
 	err := os.Chdir(args.Prefix)
 	if err != nil {
-		lib.Fail(1, err)
+		service.Fail(1, err)
 	}
 }
 
@@ -158,7 +158,7 @@ func load() {
 			new_config.Tcp = true
 		}
 	} else {
-		lib.Error(err)
+		service.Error(err)
 	}
 
 	identity, err := sipuri.Parse(new_config.Identity)
@@ -166,7 +166,7 @@ func load() {
 		err = fmt.Errorf("no user for registration identity")
 	}
 	if err != nil {
-		lib.Fail(99, err, config.Identity)
+		service.Fail(99, err, config.Identity)
 	}
 
 	new_config.register = sipuri.New(identity.User(), identity.Host()).String()
@@ -179,7 +179,7 @@ func load() {
 
 	route, err := sipuri.Parse(new_config.Server)
 	if err != nil {
-		lib.Fail(99, err, new_config.Server)
+		service.Fail(99, err, new_config.Server)
 	}
 	new_config.route = "sip:" + route.Host()
 
@@ -197,11 +197,11 @@ func main() {
 	address := fmt.Sprintf("%s:%v", config.Host, config.Port)
 	route, err := sipuri.Parse(config.Server)
 	if err != nil {
-		lib.Fail(99, err, config.Server)
+		service.Fail(99, err, config.Server)
 	}
 
-	lib.Debug(3, "prefix=", args.Prefix, ", bind=", address)
-	lib.Debug(3, "server=", "sip:"+route.Host(), ", identity=", config.register)
+	service.Debug(3, "prefix=", args.Prefix, ", bind=", address)
+	service.Debug(3, "server=", "sip:"+route.Host(), ", identity=", config.register)
 	os.RemoveAll(cache)
 	os.Mkdir(cache, 0770)
 	defer os.RemoveAll(cache)
@@ -229,16 +229,16 @@ func main() {
 			case syscall.SIGTERM: // normal exit
 				return
 			case syscall.SIGHUP: // cleanup
-				lib.DaemonReload("reload service")
-				lib.LoggerRestart()
+				service.DaemonReload("reload service")
+				service.LoggerRestart()
 				runtime.GC()
 				load()
 				if sip.SetRoute(config.route) {
-					lib.Info("changed route to ", config.route)
+					service.Info("changed route to ", config.route)
 				}
 				sip.Register(config.Identity, config.User, config.Secret)
 				texts <- "-reload-"
-				lib.DaemonLive()
+				service.DaemonLive()
 			}
 		}
 	}()
@@ -261,7 +261,7 @@ func main() {
 			default:
 				err := speach.Speak(text)
 				if err != nil {
-					lib.Error(err)
+					service.Error(err)
 				}
 			}
 		}
@@ -269,24 +269,24 @@ func main() {
 
 	events := make(chan osip.Event, config.Buffer)
 	go func(ch <-chan osip.Event, say chan<- string) {
-		defer lib.DaemonStop("stop service")
+		defer service.DaemonStop("stop service")
 		for {
 			event := <-ch
 			ctx := event.Context
-			lib.Debug(3, "event type: ", event.Type)
+			service.Debug(3, "event type: ", event.Type)
 			switch event.Type {
 			case osip.EVT_SHUTDOWN:
 				return
 			case osip.EVT_STARTUP:
-				lib.DaemonLive("service started on ", ctx.Host, ":", ctx.Port)
+				service.DaemonLive("service started ", ctx.Host, ":", ctx.Port)
 				ctx.Register(config.Identity, config.User, config.Secret)
 			case osip.EVT_REGISTER:
 				if event.Status != osip.SIP_OK {
-					lib.DaemonStatus("offline")
-					lib.Error("registration failure; status=", event.Status)
+					service.DaemonStatus("offline")
+					service.Error("registration failure; status=", event.Status)
 				} else {
-					lib.DaemonStatus("online")
-					lib.Info("service online; id=", ctx.GetIdentity())
+					service.DaemonStatus("online")
+					service.Info("service online; id=", ctx.GetIdentity())
 				}
 			case osip.EVT_MESSAGE:
 				if event.Status != osip.SIP_OK {
@@ -297,12 +297,12 @@ func main() {
 					break
 				}
 				if event.Content != "text/plain" {
-					lib.Debug(2, "ignored message input ", event.Content)
+					service.Debug(2, "ignored message input ", event.Content)
 					event.Reply(osip.SIP_NOT_ACCEPTABLE_HERE)
 					break
 				}
 				text := string(event.Body)
-				lib.Debug(2, "message from ", event.From, "; text=", text)
+				service.Debug(2, "message from ", event.From, "; text=", text)
 				event.Reply(osip.SIP_OK)
 				say <- text
 			}
@@ -311,6 +311,6 @@ func main() {
 
 	err = sip.ListenAndServe(address, events)
 	if err != nil {
-		lib.Fail(1, err)
+		service.Fail(1, err)
 	}
 }

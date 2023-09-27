@@ -16,12 +16,13 @@
 package main
 
 import (
-	"babylon/lib"
 	"bufio"
 	"fmt"
 	"time"
 
 	"github.com/tarm/serial"
+
+	"babylon/internal/service"
 )
 
 // mml command request object
@@ -112,7 +113,7 @@ func (mml *MML) Configure(config *Config) error {
 		return err
 	}
 	mml.port = port
-	lib.Info("opened ", config.Device)
+	service.Info("opened ", config.Device)
 	return nil
 }
 
@@ -120,7 +121,7 @@ func (mml *MML) Configure(config *Config) error {
 func (mml *MML) Startup(config *Config) {
 	active := false
 	reader := bufio.NewReader(mml.port)
-	lib.Debug(1, "mml running")
+	service.Debug(1, "mml running")
 	for {
 		request := <-mml.requests
 		session := request.session
