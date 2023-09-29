@@ -12,7 +12,7 @@ import (
 
 var stopping = false
 
-func DaemonReload(args ...interface{}) error {
+func Reload(args ...interface{}) error {
 	msg := fmt.Sprint(args...)
 	if len(msg) > 0 {
 		Info(msg)
@@ -24,7 +24,7 @@ func DaemonReload(args ...interface{}) error {
 	return err
 }
 
-func DaemonLive(args ...interface{}) error {
+func Live(args ...interface{}) error {
 	if stopping {
 		return nil
 	}
@@ -36,7 +36,7 @@ func DaemonLive(args ...interface{}) error {
 	return err
 }
 
-func DaemonStatus(status string) error {
+func Status(status string) error {
 	if stopping {
 		return nil
 	}
@@ -45,7 +45,7 @@ func DaemonStatus(status string) error {
 	return err
 }
 
-func DaemonStop(args ...interface{}) error {
+func Stop(args ...interface{}) error {
 	if stopping {
 		return nil
 	}

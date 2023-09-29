@@ -229,7 +229,7 @@ func main() {
 			case syscall.SIGTERM: // normal exit
 				return
 			case syscall.SIGHUP: // cleanup
-				service.DaemonReload("reload service")
+				service.Reload("reload service")
 				service.LoggerRestart()
 				runtime.GC()
 				load()
@@ -238,7 +238,7 @@ func main() {
 				}
 				sip.Register(config.Identity, config.User, config.Secret)
 				texts <- "-reload-"
-				service.DaemonLive()
+				service.Live()
 			}
 		}
 	}()
@@ -269,7 +269,7 @@ func main() {
 
 	events := make(chan osip.Event, config.Buffer)
 	go func(ch <-chan osip.Event, say chan<- string) {
-		defer service.DaemonStop("stop service")
+		defer service.Stop("stop service")
 		for {
 			event := <-ch
 			ctx := event.Context
@@ -278,14 +278,14 @@ func main() {
 			case osip.EVT_SHUTDOWN:
 				return
 			case osip.EVT_STARTUP:
-				service.DaemonLive("service started ", ctx.Host, ":", ctx.Port)
+				service.Live("service started ", ctx.Host, ":", ctx.Port)
 				ctx.Register(config.Identity, config.User, config.Secret)
 			case osip.EVT_REGISTER:
 				if event.Status != osip.SIP_OK {
-					service.DaemonStatus("offline")
+					service.Status("offline")
 					service.Error("registration failure; status=", event.Status)
 				} else {
-					service.DaemonStatus("online")
+					service.Status("online")
 					service.Info("service online; id=", ctx.GetIdentity())
 				}
 			case osip.EVT_MESSAGE:

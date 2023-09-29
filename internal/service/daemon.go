@@ -8,7 +8,7 @@ import "fmt"
 
 var stopping = false
 
-func DaemonReload(args ...interface{}) error {
+func Reload(args ...interface{}) error {
 	msg := fmt.Sprint(args...)
 	if len(msg) > 0 {
 		Info(msg)
@@ -16,7 +16,7 @@ func DaemonReload(args ...interface{}) error {
 	return nil
 }
 
-func DaemonLive(args ...interface{}) error {
+func Live(args ...interface{}) error {
 	if stopping {
 		return nil
 	}
@@ -27,14 +27,14 @@ func DaemonLive(args ...interface{}) error {
 	return nil
 }
 
-func DaemonStatus(string) error {
+func Status(string) error {
 	if stopping {
 		return fmt.Errorf("already exiting")
 	}
 	return nil
 }
 
-func DaemonStop(args ...interface{}) error {
+func Stop(args ...interface{}) error {
 	if stopping {
 		return nil
 	}

@@ -168,11 +168,11 @@ func main() {
 			case syscall.SIGTERM: // normal exit
 				running = false
 			case syscall.SIGHUP: // cleanup
-				service.DaemonReload("reload service")
+				service.Reload("reload service")
 				service.LoggerRestart()
 				runtime.GC()
 				load()
-				service.DaemonLive()
+				service.Live()
 			}
 		}
 	}()
@@ -181,8 +181,8 @@ func main() {
 	go mml.Startup(config)
 	go manager.Startup()
 	for {
-		service.DaemonLive("start service")
-		defer service.DaemonStop("stop service")
+		service.Live("start service")
+		defer service.Stop("stop service")
 		client, err := tcp.Accept()
 		if err != nil {
 			if running {
